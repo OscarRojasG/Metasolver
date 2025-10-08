@@ -17,7 +17,6 @@
 #include "VCS_Function.h"
 #include "SpaceSet.h"
 #include "Greedy.h"
-#include "DoubleEffort.h"
 #include "GlobalVariables.h"
 #include "BSG.h"
 
@@ -70,19 +69,17 @@ int main(int argc, char** argv){
 	args::ValueFlag<int> _inst(parser, "int", "Instance", {'i'});
 	args::ValueFlag<string> _format(parser, "string", "Format: (BR, BRw, 1C)", {'f'});
 	args::ValueFlag<double> _min_fr(parser, "double", "Minimum volume occupied by a block (proportion)", {"min_fr"});
-	args::ValueFlag<int> _maxtime(parser, "int", "Timelimit", {'t', "timelimit"});
+	args::ValueFlag<int> _w(parser, "int", "Beam width (nodes per level)", {'w'});
 	args::ValueFlag<int> _seed(parser, "int", "Random seed", {"seed"});
 	args::ValueFlag<double> _alpha(parser, "double", "Alpha parameter", {"alpha"});
 	args::ValueFlag<double> _beta(parser, "double", "Beta parameter", {"beta"});
 	args::ValueFlag<double> _gamma(parser, "double", "Gamma parameter", {"gamma"});
 	args::ValueFlag<double> _delta(parser, "double", "Delta parameter", {"delta"});
 	args::ValueFlag<double> _p(parser, "double", "p parameter", {'p'});
-	args::Flag _json(parser, "double", "json output tuple: (loaded, remaining, utilization)", {"json"});
+	args::Flag _json(parser, "double", "json output tuple", {"json"});
 	args::Flag _verbose(parser, "layout", "Show the actions to reach the solution", {"verbose"});
-	args::ValueFlag<int> _verbose2(parser, "layout", "Show the actions to reach the solution (v2). Should be indicated the number of actions per state", {"verbose2"});
-
+	args::ValueFlag<int> _verbose2(parser, "layout", "Verbose v2", {"verbose2"});
 	args::Flag _plot(parser, "double", "plot tree", {"plot"});
-
 	args::Flag fsb(parser, "fsb", "full-support blocks", {"fsb"});
 	args::Flag trace(parser, "trace", "Trace", {"trace"});
 	args::Positional<std::string> _file(parser, "instance-set", "The name of the instance set");
@@ -114,10 +111,9 @@ int main(int argc, char** argv){
 	string file=_file.Get();
 	int inst=(_inst)? _inst.Get():0;
 	double min_fr=(_min_fr)? _min_fr.Get():0.98;
-	int maxtime=(_maxtime)? _maxtime.Get():100;
+	int w=(_w)? _w.Get():4;
 
-	double alpha=4.0, beta=1.0, gamma=0.2, delta=1.0, p=0.04, maxtheta=0.0;
-	if(_maxtime) maxtime=_maxtime.Get();
+	double alpha=4.0, beta=1.0, gamma=0.2, delta=1.0, p=0.04;
 	if(_alpha) alpha=_alpha.Get();
 	if(_beta) beta=_beta.Get();
 	if(_gamma) gamma=_gamma.Get();
@@ -149,7 +145,7 @@ int main(int argc, char** argv){
 	cout << "File("<< format <<"): " << file << endl;
 	cout << "Instance:" << inst+1 << endl;
 	cout << "min_fr:" << min_fr << endl;
-	cout << "Maxtime:" << maxtime << endl;
+	cout << "Beam width:" << w << endl;
 
 	double r=0.0; //0.0
     //bool kdtree= false;
@@ -180,13 +176,10 @@ int main(int argc, char** argv){
     SearchStrategy *gr = new Greedy (vcs);
 
 	cout << "bsg" << endl;
-    BSG *bsg= new BSG(vcs,*gr, 4, 0.0, 0, _plot);
+    BSG *bsg= new BSG(vcs,*gr, w, 0.0, 0, _plot);
     //BSG_midBSG *bsg= new BSG_midBSG(*gr, *exp, 4);
 
     //bsg->set_shuffle_best_path(true);
-
-	cout << "double effort" << endl;
-    SearchStrategy *de= new DoubleEffort(*bsg);
 
 	cout << "copying state" << endl;
 	State& s_copy= *s0->clone();
@@ -195,10 +188,7 @@ int main(int argc, char** argv){
 
 	cout << "running" << endl;
 
-    if(_plot)
-    	de=bsg;
-
-    double eval=de->run(s_copy, maxtime, begin_time) ;
+    double eval=bsg->run(s_copy);
 
     cout << "% volume utilization" << endl;
 	cout << eval*100 << endl;
@@ -212,7 +202,7 @@ int main(int argc, char** argv){
 
 
   if(_verbose || _verbose2){
-	list<const Action*>& actions= dynamic_cast<const clpState*>(de->get_best_state())->get_path();
+	list<const Action*>& actions= dynamic_cast<const clpState*>(bsg->get_best_state())->get_path();
 	
 	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
 	for (const Block* block:s00->valid_blocks){
@@ -260,13 +250,13 @@ int main(int argc, char** argv){
    if(_json){
 	   	bool first;
 		cout << "{\"remaining\" :["; first=true;
-		for(auto b:dynamic_cast<const clpState*>(de->get_best_state())->nb_left_boxes)
+		for(auto b:dynamic_cast<const clpState*>(bsg->get_best_state())->nb_left_boxes)
 		    if(b.second > 0){
 			   if(first)  first=false; else cout << "," ;
 			   cout << "[" << b.first->get_id() << "," << b.second << "]";
 			}
 		cout << "], \"loaded\" :["; first=true;
-		for(auto b:dynamic_cast<const clpState*>(de->get_best_state())->nb_left_boxes){
+		for(auto b:dynamic_cast<const clpState*>(bsg->get_best_state())->nb_left_boxes){
 			int load = s0->nb_left_boxes[b.first] -b.second;
 			if(load>0){
 			   if(first)  first=false; else cout << "," ;

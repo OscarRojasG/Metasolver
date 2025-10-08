@@ -59,13 +59,13 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 
 	double vol=(delta>0.0)? (double) b.getOccupiedVolume(): 1.0;
 
-	double cs=(alpha>0.0)? CS_p(s, b, sp, p) : 1.0;
+	double cs_all=(alpha>0.0)? CS_p(s, b, sp, p) : 1.0;
 
 	double n=(gamma>0.0)? (1.0/(double) b.n_boxes) : 1.0;
 
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(vol);
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(loss);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs);
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs_all);
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(n);
 
 	double eval;
@@ -73,13 +73,23 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 		double density = b.getTotalWeight() / (double) b.getVolume();
 		double profit = b.getTotalProfit();
 
-		eval =( pow(vol, delta)  * pow((1.0-loss), beta) * pow(cs, alpha) *
+		eval =( pow(vol, delta)  * pow((1.0-loss), beta) * pow(cs_all, alpha) *
 				     pow(n,gamma) * pow(density, delta2) * pow(profit, delta3));
 	}
 
 
-	eval= (pow(vol, delta)  * pow((1.0-loss),beta) * pow(cs,alpha) * pow(n,gamma) );
+	eval= (pow(vol, delta)  * pow((1.0-loss),beta) * pow(cs_all,alpha) * pow(n,gamma) );
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(eval);
+
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.getL() / (double) sp.getL());
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.getW() / (double) sp.getW());
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.getH() / (double) sp.getH());
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[0]);
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[1]);
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[2]);
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[3]);
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[4]);
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[5]);
 
 	return eval;
 }
@@ -109,87 +119,90 @@ double VCS_Function::CS_p(const State& s, const Block& b, const Space& sp, doubl
 
 	   surface=surface+_surface_in_contact(bb, *dynamic_cast<const clpState*>(&s)->cont);
 
+		cs[0] = std::min(1.0, cs[0] / (bb.getW() * bb.getH())); // -X
+		cs[1] = std::min(1.0, cs[1] / (bb.getW() * bb.getH())); // +X
+		cs[2] = std::min(1.0, cs[2] / (bb.getL() * bb.getH())); // -Y
+		cs[3] = std::min(1.0, cs[3] / (bb.getL() * bb.getH())); // +Y
+		cs[4] = std::min(1.0, cs[4] / (bb.getL() * bb.getW())); // -Z
+		cs[5] = std::min(1.0, cs[5] / (bb.getL() * bb.getW())); // +Z
 	   return (double)surface / (double)(bb.getSurface());
 }
 
 
 long VCS_Function::_surface_in_contact(const AABB& b, const AABB& bi){
-   long x_min = std::max(b.getXmin(), bi.getXmin());
-   long x_max = std::min(b.getXmax(), bi.getXmax());
-   long y_min = std::max(b.getYmin(), bi.getYmin());
-   long y_max = std::min(b.getYmax(), bi.getYmax());
-   long z_min = std::max(b.getZmin(), bi.getZmin());
-   long z_max = std::min(b.getZmax(), bi.getZmax());
+	long x_min = std::max(b.getXmin(), bi.getXmin());
+	long x_max = std::min(b.getXmax(), bi.getXmax());
+	long y_min = std::max(b.getYmin(), bi.getYmin());
+	long y_max = std::min(b.getYmax(), bi.getYmax());
+	long z_min = std::max(b.getZmin(), bi.getZmin());
+	long z_max = std::min(b.getZmax(), bi.getZmax());
 
-   long s=0;
-   if(y_max>y_min && z_max>z_min){
-		  if(b.getXmax() >= bi.getXmin() - p*(double)b.getL()){
-			  s=(y_max-y_min)*(z_max-z_min);
-			  cs[0]+=s;
-		  }else if(bi.getXmax() >= b.getXmin() - p*(double)b.getL()){
-			  s=(y_max-y_min)*(z_max-z_min);
-			  cs[0]+=s;
-		  }
-    }else if(x_max>x_min && z_max>z_min){
-	      if(b.getYmax() >= bi.getYmin() - p*(double)b.getW()){
-	    	  s=(x_max-x_min)*(z_max-z_min);
-			  cs[1]+=s;
-	      }else if(bi.getYmax() >= b.getYmin() - p*(double)b.getW()){
-	    	  s=(x_max-x_min)*(z_max-z_min);
-			  cs[1]+=s;
-	      }
-    }else if(x_max>x_min && y_max>y_min){
-	      if(b.getZmax() >= bi.getZmin() - p*(double)b.getH()){
-	    	  s=(x_max-x_min)*(y_max-y_min);
-			  cs[2]+=s;
-	      }else if(bi.getZmax() >= b.getZmin() - p*(double)b.getH()){
-	    	  s=(x_max-x_min)*(y_max-y_min);
-			  cs[2]+=s;
-		 }
+	long s=0;
+	if(y_max>y_min && z_max>z_min){
+		if(b.getXmax() >= bi.getXmin() - p*(double)b.getL()){
+			s=(y_max-y_min)*(z_max-z_min);
+			cs[0]+=s; // contacto cara Xmin
+		}else if(bi.getXmax() >= b.getXmin() - p*(double)b.getL()){
+			s=(y_max-y_min)*(z_max-z_min);
+			cs[1]+=s; // contacto cara Xmax
+		}
+	}else if(x_max>x_min && z_max>z_min){
+		if(b.getYmax() >= bi.getYmin() - p*(double)b.getW()){
+			s=(x_max-x_min)*(z_max-z_min);
+			cs[2]+=s; // cara Ymin
+		}else if(bi.getYmax() >= b.getYmin() - p*(double)b.getW()){
+			s=(x_max-x_min)*(z_max-z_min);
+			cs[3]+=s; // cara Ymax
+		}
+	}else if(x_max>x_min && y_max>y_min){
+		if(b.getZmax() >= bi.getZmin() - p*(double)b.getH()){
+			s=(x_max-x_min)*(y_max-y_min);
+			cs[4]+=s; // cara Zmin
+		}else if(bi.getZmax() >= b.getZmin() - p*(double)b.getH()){
+			s=(x_max-x_min)*(y_max-y_min);
+			cs[5]+=s; // cara Zmax
+		}
 	}
 
 	return s;
 }
 
 long VCS_Function::_surface_in_contact(const AABB& b, const Block& cont){
-	   long surface=0, s;
+	long surface=0, s;
 
-	   if(b.getXmin() <= p*(double)b.getL() ){
-		   s=(b.getW() * b.getH());
-		   surface += s;
-		   cs[0]+=s;
-	   }
+	if(b.getXmin() <= p*(double)b.getL() ){
+		s=(b.getW() * b.getH());
+		surface += s;
+		cs[0]+=s; // Xmin
+	}
+	if(b.getXmax() >= cont.getL() - p*(double)b.getL() ){
+		s=(b.getW() * b.getH());
+		surface += s;
+		cs[1]+=s; // Xmax
+	}
+	if(b.getYmin() <= p*(double)b.getW() ){
+		s = (b.getL() * b.getH());
+		surface += s;
+		cs[2]+=s; // Ymin
+	}
+	if(b.getYmax() >= cont.getW() - p*(double)b.getW() ){
+		s = (b.getL() * b.getH());
+		surface += s;
+		cs[3]+=s; // Ymax
+	}
+	if(b.getZmin() <= p*(double)b.getH() ){
+		s = (b.getL() * b.getW());
+		surface += s;
+		cs[4]+=s; // Zmin
+	}
+	if(b.getZmax() >= cont.getH() - p*(double)b.getH() ){
+		s = (b.getL() * b.getW());
+		surface += s;
+		cs[5]+=s; // Zmax
+	}
 
-	   if(b.getXmax() >= cont.getL() - p*(double)b.getL() ){
-		   s=(b.getW() * b.getH());
-		   surface += s;
-		   cs[0]=max(s,cs[0]);
-	   }
 
-	   if(b.getYmin() <= p*(double)b.getW() ){
-		   s = (b.getL() * b.getH());
-		   surface += s;
-		   cs[1]+=s;
-	   }
-	   if(b.getYmax() >= cont.getW() - p*(double)b.getW() ){
-		   s = (b.getL() * b.getH());
-		   surface += s;
-		   cs[1]+=max(s,cs[1]);
-	   }
-
-	   if(b.getZmin() <= p*(double)b.getH() ){
-		   s = (b.getL() * b.getW());
-		   surface += s;
-		   cs[2]+=s;
-	   }
-
-	   if(b.getZmax() >= cont.getH() - p*(double)b.getH() ){
-		   s = (b.getL() * b.getW());
-		   surface += s;
-		   cs[2]+=max(s,cs[2]);
-	   }
-
-	   return surface;
+	return surface;
 }
 
 

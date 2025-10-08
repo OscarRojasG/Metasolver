@@ -52,7 +52,7 @@ public:
 	}
 
 
-	long cs[6];
+	double cs[6];
 
 	static int nn;
 

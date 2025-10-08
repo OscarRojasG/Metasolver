@@ -20,7 +20,7 @@ namespace clp {
 
 
 struct by_manhattan_distance {
-    bool operator()(const Space& sp1, const Space& sp2);
+    bool operator()(const Space& sp1, const Space& sp2) const;
 };
 
 

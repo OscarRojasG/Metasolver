@@ -33,7 +33,7 @@ double double_rand(double min=0.0, double max=1.0);
  * For sorting the blocks in the map Block::all_blocks;
  */
 struct block_order {
-    bool operator()(const Block* b1, const Block* b2);
+    bool operator()(const Block* b1, const Block* b2) const;
 };
 
 

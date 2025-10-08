@@ -105,7 +105,7 @@ list<const Block* > Block::create_new_blocks(const Block* b2, double min_fr, con
 	return blocks;
 }
 
-bool block_order::operator()(const Block* b1, const Block* b2) {
+bool block_order::operator()(const Block* b1, const Block* b2) const {
 	if(b1->getOccupiedVolume() != b2->getOccupiedVolume())
 		return (b1->getOccupiedVolume() < b2->getOccupiedVolume());
 

@@ -109,7 +109,7 @@ Vector3 Space::get_location(const Vector3& block) const{
 	return Vector3(vec[0],vec[1],vec[2]);
 }
 
-bool by_manhattan_distance::operator()(const Space& sp1, const Space& sp2) {
+bool by_manhattan_distance::operator()(const Space& sp1, const Space& sp2) const {
 	//if(&sp1==&sp2) return false;
     if(Space::bottom_up && sp1.getZmin() != sp2.getZmin()) return sp1.getZmin() < sp2.getZmin();
 

@@ -105,7 +105,7 @@ int main(int argc, char** argv){
 			// print top w
 			int printed=0;
 			for(auto &p : scored){
-				if(printed>=w) break;
+				if(printed>=w*w) break;
 				Action* a = p.second;
 				clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
 				if(!ca) continue;

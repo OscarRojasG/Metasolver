@@ -30,6 +30,9 @@ Block::Block(const BoxShape& box, BoxShape::Orientation o, double occupied_volum
 
 	id = INCREMENTAL_ID++;
 	nb_boxes[&box]=1;
+	center_of_mass_x = box.getL_d(o)/2;
+	center_of_mass_y = box.getW_d(o)/2;
+	center_of_mass_z = box.getH_d(o)/2;
 
 };
 
@@ -60,6 +63,16 @@ void Block::insert(const Block& block, const Vector3& point, const Vector3 min_d
     blocks->insert(b);
 }
 
+double Block::getDistanceToCenter() const
+{
+    double x_d = center_of_mass_x - getL()/2.0f;
+	double y_d = center_of_mass_y - getW()/2.0f;
+	double z_d = center_of_mass_z - getH()/2.0f;
+
+	double d = sqrt(pow(x_d,2) + pow(y_d, 2) + pow(z_d, 2));
+	double max_d = sqrt(pow(getL()/2.0f,2) + pow(getW()/2.0f, 2) + pow(getH()/2.0f, 2));
+	return d/max_d;
+}
 
 list<const Block* > Block::create_new_blocks(const Block* b2, double min_fr, const Vector3& max_dim, double wmax) const{
 
@@ -92,6 +105,11 @@ list<const Block* > Block::create_new_blocks(const Block* b2, double min_fr, con
 			new_block=new Block(ll,ww,hh);
 			new_block->insert(*b1, Vector3(0,0,0));
 			new_block->insert(*b2, Vector3(x2,y2,z2));
+
+			double totalVolume = b1->getOccupiedVolume() + b2->getOccupiedVolume();
+			new_block->center_of_mass_x = (b1->center_of_mass_x * b1->getOccupiedVolume() + (b2->center_of_mass_x + x2) * b2->getOccupiedVolume()) / totalVolume;
+			new_block->center_of_mass_y = (b1->center_of_mass_y * b1->getOccupiedVolume() + (b2->center_of_mass_y + y2) * b2->getOccupiedVolume()) / totalVolume;
+			new_block->center_of_mass_z = (b1->center_of_mass_z * b1->getOccupiedVolume() + (b2->center_of_mass_z + z2) * b2->getOccupiedVolume()) / totalVolume;
 
 			if(Block::all_blocks.find(new_block)==Block::all_blocks.end()){
 				Block::all_blocks.insert(new_block);

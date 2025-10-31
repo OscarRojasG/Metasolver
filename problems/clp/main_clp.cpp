@@ -19,6 +19,7 @@
 #include "Greedy.h"
 #include "GlobalVariables.h"
 #include "BSG.h"
+#include "PathBuilder.h"
 
 bool global::TRACE = false;
 
@@ -214,6 +215,10 @@ int main(int argc, char** argv){
 
 	cout << "Solve steps: " << endl;
 
+	/* Métricas Estado */
+	clpState* s000 = dynamic_cast<clpState*> (s0->clone());
+	PathBuilder path_builder = PathBuilder(*s000);
+
 	for(auto action:actions){
 		const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
 
@@ -227,11 +232,17 @@ int main(int argc, char** argv){
 		cout << "selected block:" << clp_action->block.id << " space:" << clp_action->space.get_location(clp_action->block) << endl;
 
 		set<int> visited;
-		if(_verbose2){
+		if(_verbose2){	
 			for (auto act:best_actions){
 				const clpAction* clp_act = dynamic_cast<const clpAction*> (act);
 				if (visited.find(clp_act->block.id) != visited.end()) continue;
 				visited.insert(clp_act->block.id);
+
+				clp_act->metrics.push_back(path_builder.getTotalVolumeRatio());
+				clp_act->metrics.push_back(path_builder.getAvgVolumeRatio());
+
+				const auto& ratios = path_builder.getQuadrantRatio();
+				clp_act->metrics.insert(clp_act->metrics.end(), ratios.begin(), ratios.end());
 
 				std::cout << "  action block:" << clp_act->block.id << " eval: ";
 				for (auto it = clp_act->metrics.begin(); it != clp_act->metrics.end(); ++it) 
@@ -240,7 +251,8 @@ int main(int argc, char** argv){
 				std::cout << std::endl;
 			}
 		}
-		
+
+		path_builder.addAction(clp_action);
 	}
 
 

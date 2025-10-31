@@ -63,7 +63,7 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 
 	double n=(gamma>0.0)? (1.0/(double) b.n_boxes) : 1.0;
 
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(vol);
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(vol / ss->cont->getVolume());
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(loss);
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs_all);
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(n);
@@ -77,19 +77,13 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 				     pow(n,gamma) * pow(density, delta2) * pow(profit, delta3));
 	}
 
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(vol / sp.getVolume());
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.center_of_mass_x / b.getL());
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.center_of_mass_y / b.getW());
+	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.center_of_mass_z / b.getH());
 
 	eval= (pow(vol, delta)  * pow((1.0-loss),beta) * pow(cs_all,alpha) * pow(n,gamma) );
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(eval);
-
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.getL() / (double) sp.getL());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.getW() / (double) sp.getW());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(b.getH() / (double) sp.getH());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[0]);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[1]);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[2]);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[3]);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[4]);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs[5]);
+	// dynamic_cast<const clpAction*>(&a)->metrics.push_back(eval);
 
 	return eval;
 }

@@ -44,6 +44,8 @@ public:
 	static int INCREMENTAL_ID;
 	int id;
 
+	double center_of_mass_x, center_of_mass_y, center_of_mass_z;
+
 	/**
 	 * Constructs a container of dimensions l,w,h
 	 */
@@ -80,6 +82,8 @@ public:
     virtual double getTotalWeight() const {return total_weight;}
 
     virtual double getTotalProfit() const {return total_profit;}
+
+    virtual double getDistanceToCenter() const;
 
 	bool verify_solution();
 

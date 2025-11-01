@@ -85,8 +85,6 @@ public:
 
     virtual double getDistanceToCenter() const;
 
-	bool verify_solution();
-
     void MatLab_print(double pause_time=0.0) const {
 		cout << "axis equal" << endl;
 		cout <<  "DrawCuboid([" << getL() << ";" << getW() << ";" << getH() <<"],["
@@ -99,6 +97,8 @@ public:
 
 	map<const BoxShape*, int> nb_boxes;
 	int n_boxes;
+
+	std::map<const BoxShape*, std::map<BoxShape::Orientation, int>> or_boxes;
 
 
 	AABBContainer<Space>* spaces;

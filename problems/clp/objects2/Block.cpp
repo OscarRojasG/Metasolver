@@ -30,6 +30,7 @@ Block::Block(const BoxShape& box, BoxShape::Orientation o, double occupied_volum
 
 	id = INCREMENTAL_ID++;
 	nb_boxes[&box]=1;
+	or_boxes[&box][o] += 1;
 	center_of_mass_x = box.getL_d(o)/2;
 	center_of_mass_y = box.getW_d(o)/2;
 	center_of_mass_z = box.getH_d(o)/2;
@@ -50,6 +51,13 @@ void Block::insert(const Block& block, const Vector3& point, const Vector3 min_d
     	nb_boxes[it_nb->first]+=it_nb->second;
     	n_boxes+=it_nb->second;
     }
+
+	// Se actualiza la cantidad de cajas por orientación
+	for (const auto& [shape, orient_map] : block.or_boxes) {
+		for (const auto& [orient, count] : orient_map) {
+			or_boxes[shape][orient] += count;
+		}
+	}
 
     //Se actualiza el volumen ocupado
     occupied_volume += block.getOccupiedVolume();

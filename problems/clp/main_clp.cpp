@@ -20,6 +20,7 @@
 #include "GlobalVariables.h"
 #include "BSG.h"
 #include "PathBuilder.h"
+#include "BlockMetrics.h"
 
 bool global::TRACE = false;
 
@@ -207,10 +208,16 @@ int main(int argc, char** argv){
 	
 	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
 	for (const Block* block:s00->valid_blocks){
-		cout << "block: " << block->id << " " << *block << endl;
-		for (auto pair:block->nb_boxes){
-			cout << " -- box: " << *pair.first << " n: " << pair.second << endl;
-		}
+		BlockMetrics blockMetrics = BlockMetrics(*block, *(s00->cont));
+		cout << "block:" << block->id << " metrics:";
+		cout << " " << blockMetrics.getNormL();
+		cout << " " << blockMetrics.getNormH();
+		cout << " " << blockMetrics.getNormW();
+		cout << " " << blockMetrics.getNormOccupiedVolumeBlock();
+		cout << " " << blockMetrics.getNormOccupiedVolumeCont();
+		cout << " " << blockMetrics.getBoxesAmountReciprocal();
+		cout << " " << blockMetrics.getStdBoxVolume();
+		cout << endl;
 	}
 
 	cout << "Solve steps: " << endl;
@@ -241,8 +248,11 @@ int main(int argc, char** argv){
 				clp_act->metrics.push_back(path_builder.getTotalVolumeRatio());
 				clp_act->metrics.push_back(path_builder.getAvgVolumeRatio());
 
-				const auto& ratios = path_builder.getQuadrantRatio();
-				clp_act->metrics.insert(clp_act->metrics.end(), ratios.begin(), ratios.end());
+				const auto& vol_ratios = path_builder.getQuadrantVolumeRatio();
+				clp_act->metrics.insert(clp_act->metrics.end(), vol_ratios.begin(), vol_ratios.end());
+
+				const auto& max_vol_ratios = path_builder.getQuadrantMaxVolumeRatio();
+				clp_act->metrics.insert(clp_act->metrics.end(), max_vol_ratios.begin(), max_vol_ratios.end());
 
 				std::cout << "  action block:" << clp_act->block.id << " eval: ";
 				for (auto it = clp_act->metrics.begin(); it != clp_act->metrics.end(); ++it) 

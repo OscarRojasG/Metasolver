@@ -23,7 +23,8 @@ private:
     double avgVolumeRatio = 0.0;
 
     // --- Distribución espacial ---
-    std::array<double, 8> quadrantRatio = {0.0};
+    std::array<double, 8> quadrantVolumeRatio = {0.0};
+    std::array<double, 8> quadrantMaxVolumeRatio = {0.0};
 
     // --- Funciones auxiliares ---
     void updateMetrics(const clpAction* action);
@@ -48,7 +49,8 @@ public:
     double getAvgVolumeRatio() const;
 
     // --- Getter del ratio por cuadrante ---
-    const std::array<double, 8>& getQuadrantRatio() const;
+    const std::array<double, 8>& getQuadrantVolumeRatio() const;
+    const std::array<double, 8>& getQuadrantMaxVolumeRatio() const;
 };
 
 } // namespace clp

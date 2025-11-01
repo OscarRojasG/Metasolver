@@ -9,7 +9,8 @@ PathBuilder::PathBuilder(const clpState& s0)
     totalVolume = 0.0;
     numBlocks = 0;
     avgVolume = 0.0;
-    quadrantRatio.fill(0.0);
+    quadrantVolumeRatio.fill(0.0);
+    quadrantMaxVolumeRatio.fill(1.0f/8);
 }
 
 void PathBuilder::addAction(const clpAction* action) {
@@ -111,9 +112,11 @@ void PathBuilder::updateQuadrantVolume(const Space s) {
 
     // --- Calcular ratios ocupados / volumen del cuadrante ---
     for (int i = 0; i < 8; ++i) {
-        quadrantRatio[i] = (quadrantVolMax[i] > 0.0)
+        quadrantVolumeRatio[i] = (quadrantVolMax[i] > 0.0)
             ? (quadrantVolume[i] / quadrantVolMax[i])
             : 0.0;
+
+        quadrantMaxVolumeRatio[i] = quadrantVolMax[i] / cont->getVolume();
     }
 }
 
@@ -163,8 +166,12 @@ double PathBuilder::getAvgVolumeRatio() const
     return avgVolumeRatio;
 }
 
-const std::array<double, 8>& PathBuilder::getQuadrantRatio() const {
-    return quadrantRatio;
+const std::array<double, 8>& PathBuilder::getQuadrantVolumeRatio() const {
+    return quadrantVolumeRatio;
+}
+
+const std::array<double, 8>& PathBuilder::getQuadrantMaxVolumeRatio() const {
+    return quadrantMaxVolumeRatio;
 }
 
 } // namespace clp

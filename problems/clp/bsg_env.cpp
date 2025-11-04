@@ -5,6 +5,8 @@
 #include "VCS_Function.h"
 #include "BSG.h"
 #include "Greedy.h"
+#include "BlockMetrics.h"
+#include "PathBuilder.h"
 
 using namespace std;
 using namespace metasolver;
@@ -58,18 +60,13 @@ int main(int argc, char** argv){
 	clpState::Format f = clpState::BR;
 
     clpState* s0 = new_state(file, inst, min_fr, 10000, f);
-
+	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
 
     VCS_Function* vcs = new VCS_Function(s0->nb_left_boxes, *s0->cont, alpha, beta, gamma, p, delta, 0.0, r);
     SearchStrategy *gr = new Greedy(vcs);
     BSG *bsg= new BSG(vcs,*gr, w, 0.0, 0);
 
-
-	// Esperar comandos por stdin para decidir acciones desde fuera del código.
-	// Comandos soportados:
-	// -A            : imprime las w mejores acciones (una por línea: block_id metrics...)
-	// -T <block_id> : aplica la acción cuyo bloque tiene id == block_id y actualiza s0
-	// -Q            : salir
+	PathBuilder pathBuilder = PathBuilder(*s0);
 
 	string line;
 	// cout << "BSG environment ready. Commands: -A (list actions), -T <id> (take action), -Q (quit)" << endl;
@@ -86,14 +83,15 @@ int main(int argc, char** argv){
 		if(cmd=="-A"){
 			// collect candidate actions
 			list<Action*> actions;
-			s0->get_actions(actions);
+			const clpState& s = pathBuilder.getState();
+			s.get_actions(actions);
 
 			// evaluate each action using the evaluator
 			vector<pair<double, Action*>> scored;
 			for(auto a : actions){
 				// clear any previous metrics
 				dynamic_cast<clp::clpAction*>(a)->metrics.clear();
-				double val = vcs->eval_action(*s0, *a);
+				double val = vcs->eval_action(s, *a);
 				scored.push_back(make_pair(val, a));
 			}
 
@@ -112,14 +110,13 @@ int main(int argc, char** argv){
 				cout << ca->block.id;
 				// print metrics
 				for(auto m : ca->metrics) cout << " " << m;
-				cout << "\n";
+				cout << endl;
 				printed++;
 			}
-
 			cout << "END" << endl;
 
 			// cleanup actions
-			for(auto &p : scored) delete p.second;
+			// for(auto &p : scored) delete p.second;
 		}
 		else if(cmd=="-T"){
 			int bid;
@@ -129,8 +126,9 @@ int main(int argc, char** argv){
 			}
 
 			// gather actions and find matching block id
+			const clpState& s = pathBuilder.getState();
 			list<Action*> actions;
-			s0->get_actions(actions);
+			s.get_actions(actions);
 			Action* selected = nullptr;
 			for(auto a : actions){
 				clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
@@ -139,26 +137,70 @@ int main(int argc, char** argv){
 
 			if(!selected){
 				cerr << "No action found for block id " << bid << endl;
-				for(auto a : actions) delete a;
+				//for(auto a : actions) delete a;
 				continue;
 			}
 
 			// apply transition
-			s0->transition(*selected);
-			// cout << "Applied action for block " << bid << ", new occupied volume: " << s0->cont->getOccupiedVolume() << endl;
+			pathBuilder.addAction(dynamic_cast<clp::clpAction*>(selected->clone()));
+			clpAction* selAction = dynamic_cast<clpAction*>(selected); 
+			cout << selAction->block.getOccupiedVolume() / s.cont->getVolume() << endl;
 
 			// free remaining actions
-			for(auto a : actions) if(a!=selected) delete a;
-			delete selected;
+			//for(auto a : actions) if(a!=selected) delete a;
+			// delete selected;
+		} else if(cmd=="-B"){
+			for (const Block* block:s00->valid_blocks){
+				BlockMetrics blockMetrics = BlockMetrics(*block, *(s00->cont));
+				cout << block->id;
+				cout << " " << blockMetrics.getNormL();
+				cout << " " << blockMetrics.getNormH();
+				cout << " " << blockMetrics.getNormW();
+				cout << " " << blockMetrics.getNormOccupiedVolumeCont();
+				cout << " " << blockMetrics.getBoxesAmountReciprocal();
+				cout << endl;
+			}
+			cout << "END" << endl;
+		} else if(cmd=="-P"){
+			const clpState& s = pathBuilder.getState();
+			clp::Space space = s.cont->spaces->top();
+			const bool* anchors = space.get_anchor();
 
-			// update evaluator and strategy internal state if needed
-			vcs->set_lambda2(vcs->get_lambda2()); // no-op but placeholder for future updates
-			bsg->initialize(s0);
+			list<const clpAction*> actions = pathBuilder.getActions();
+			for (const clpAction* action: actions) {
+				const Space& sb = action->space;
+				const Block& block = action->block;
 
-		} else if(cmd=="-V"){
-			double eval[2] = {(double) s0->cont->getOccupiedVolume(), s0->cont->getVolume()};
-			for(auto m : eval) cout << " " << m;
+				Vector3 coords = sb.get_location(block);
+
+				long bx = anchors[0] ? (coords.getX() + block.getL()) * -1 : coords.getX();
+				long by = anchors[1] ? (coords.getY() + block.getW()) * -1 : coords.getY();
+				long bz = anchors[2] ? (coords.getZ() + block.getH()) * -1 : coords.getZ();
+
+				cout << block.id;
+				cout << " " << bx;
+				cout << " " << by;
+				cout << " " << bz;
+				cout << endl;
+			}
+			cout << "END" << endl;
+		} else if(cmd=="-C"){
+			const clpState& s = pathBuilder.getState();
+			clp::Space space = s.cont->spaces->top();
+			const Vector3 corner = space.get_corner();
+			const bool* anchors = space.get_anchor();
+
+			long sx = anchors[0] ? corner.getX() * -1 : corner.getX();
+			long sy = anchors[1] ? corner.getY() * -1 : corner.getY();
+			long sz = anchors[2] ? corner.getZ() * -1 : corner.getZ();
+
+			cout << " " << sx;
+			cout << " " << sy;
+			cout << " " << sz;
 			cout << endl;
+		} else if(cmd=="-V"){
+			clpState s = pathBuilder.getState();
+			cout << s.cont->getOccupiedVolume() / s.cont->getVolume() << endl;
 		} else {
 			cerr << "Unknown command: " << cmd << endl;
 		}

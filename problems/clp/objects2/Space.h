@@ -25,7 +25,9 @@ public:
 
 	Vector3 get_location(const Vector3& block) const;
 
-	inline int get_manhattan_distance() const {return manhattan_distance;}
+    Vector3 get_corner() const {return corner;};
+
+    inline int get_manhattan_distance() const {return manhattan_distance;}
 
 	int get_manhattan_distance(const Vector3& cont, const bool* anchor) const;
 
@@ -46,6 +48,7 @@ public:
 
 private:
 	bool anchor[3];
+	Vector3 corner;
 	int manhattan_distance;
 
 };

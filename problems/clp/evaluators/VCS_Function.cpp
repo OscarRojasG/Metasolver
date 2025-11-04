@@ -80,13 +80,13 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 	/* Métricas */
 	// Métricas del bloque
 	BlockMetrics blockMetrics(b, *ss->cont);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormL());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormW());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormH());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormOccupiedVolumeBlock());
+	//dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormL());
+	//dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormW());
+	//dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormH());
+	//dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormOccupiedVolumeBlock());
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getNormOccupiedVolumeCont());
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getBoxesAmountReciprocal());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getStdBoxVolume());
+	//dynamic_cast<const clpAction*>(&a)->metrics.push_back(blockMetrics.getStdBoxVolume());
 
 	// Métricas de la acción
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(loss);

@@ -213,10 +213,10 @@ int main(int argc, char** argv){
 		cout << " " << blockMetrics.getNormL();
 		cout << " " << blockMetrics.getNormH();
 		cout << " " << blockMetrics.getNormW();
-		cout << " " << blockMetrics.getNormOccupiedVolumeBlock();
+		//cout << " " << blockMetrics.getNormOccupiedVolumeBlock();
 		cout << " " << blockMetrics.getNormOccupiedVolumeCont();
 		cout << " " << blockMetrics.getBoxesAmountReciprocal();
-		cout << " " << blockMetrics.getStdBoxVolume();
+		//cout << " " << blockMetrics.getStdBoxVolume();
 		cout << endl;
 	}
 
@@ -245,14 +245,14 @@ int main(int argc, char** argv){
 				if (visited.find(clp_act->block.id) != visited.end()) continue;
 				visited.insert(clp_act->block.id);
 
-				clp_act->metrics.push_back(path_builder.getTotalVolumeRatio());
-				clp_act->metrics.push_back(path_builder.getAvgVolumeRatio());
+				//clp_act->metrics.push_back(path_builder.getTotalVolumeRatio());
+				//clp_act->metrics.push_back(path_builder.getAvgVolumeRatio());
 
 				const auto& vol_ratios = path_builder.getQuadrantVolumeRatio();
-				clp_act->metrics.insert(clp_act->metrics.end(), vol_ratios.begin(), vol_ratios.end());
+				//clp_act->metrics.insert(clp_act->metrics.end(), vol_ratios.begin(), vol_ratios.end());
 
 				const auto& max_vol_ratios = path_builder.getQuadrantMaxVolumeRatio();
-				clp_act->metrics.insert(clp_act->metrics.end(), max_vol_ratios.begin(), max_vol_ratios.end());
+				//clp_act->metrics.insert(clp_act->metrics.end(), max_vol_ratios.begin(), max_vol_ratios.end());
 
 				std::cout << "  action block:" << clp_act->block.id << " eval: ";
 				for (auto it = clp_act->metrics.begin(); it != clp_act->metrics.end(); ++it) 

@@ -37,31 +37,39 @@ bool lex_lower(const Space & sp1, const Space & sp2){
 }
 
 void Space::initialize(const Vector3& cont){
+	long corner_x, corner_y, corner_z;
+
     int dist=0;
     if(getXmin() <= cont.getX() - getXmax() ){
-    	dist+=getXmin() ;
+		corner_x = getXmin();
+    	dist+=corner_x;
       	anchor[0]=0;
     }else{
+		corner_x = getXmax();
 	 	dist+= cont.getX() - getXmax();
 	   	anchor[0]=1;
     }
 
-
     if(getYmin()  <= cont.getY() - getYmax() ){
+		corner_y = getYmin();
     	dist+=getYmin();
       	anchor[1]=0;
     }else{
+		corner_y = getYmax();
     	dist+= cont.getY() - getYmax();
         anchor[1]=1;
     }
 
     if(Block::FSB || bottom_up || getZmin()  <= cont.getZ() - getZmax() ){
+		corner_z = getZmin();
     	dist+=getZmin() ;
     	anchor[2]=0;
     }else{
+		corner_z = getZmax();
 		dist+= cont.getZ() - getZmax();
 		anchor[2]=1;
     }
+	corner = Vector3(corner_x, corner_y, corner_z);
 
     manhattan_distance=dist;
 }
@@ -125,7 +133,5 @@ bool by_manhattan_distance::operator()(const Space& sp1, const Space& sp2) const
 
 	return (sp1.getMaxs().lex_lower(sp2.getMaxs()));*/
 }
-
-
 
 }

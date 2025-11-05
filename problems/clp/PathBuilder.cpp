@@ -4,7 +4,7 @@
 namespace clp {
 
 PathBuilder::PathBuilder(const clpState& s0)
-    : state(s0)
+    : state(s0), initialState(&s0)
 {
     totalVolume = 0.0;
     numBlocks = 0;
@@ -138,6 +138,11 @@ void PathBuilder::updateMetrics(const clpAction* action) {
 // --- Getters ---
 const clpState& PathBuilder::getState() const {
     return state;
+}
+
+const clpState &PathBuilder::getInitialState() const
+{
+    return *initialState;
 }
 
 const std::list<const clpAction*>& PathBuilder::getActions() const {

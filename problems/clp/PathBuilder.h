@@ -11,6 +11,7 @@ namespace clp {
 class PathBuilder {
 private:
     clpState state;                         // Copia del estado inicial
+    const clpState* initialState;
     std::list<const clpAction*> actions;    // Lista de acciones
 
     // --- Métricas generales ---
@@ -39,6 +40,7 @@ public:
 
     // --- Acceso ---
     const clpState& getState() const;
+    const clpState& getInitialState() const;
     const std::list<const clpAction*>& getActions() const;
 
     // --- Getters de métricas ---

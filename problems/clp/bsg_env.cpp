@@ -80,10 +80,13 @@ int main(int argc, char** argv){
 
 		if (cmd == "-A") {
 			printer.printActions(vcs, w);
+			cout << "END" << endl;
 		} else if (cmd == "-B") {
 			printer.printBlocks();
+			cout << "END" << endl;
 		} else if (cmd == "-P") {
 			printer.printPlaced();
+			cout << "END" << endl;
 		} else if (cmd == "-V") {
 			printer.printVolume();
 		} else if(cmd=="-T") {
@@ -111,8 +114,8 @@ int main(int argc, char** argv){
 
 			// apply transition
 			pathBuilder.addAction(dynamic_cast<clp::clpAction*>(selected->clone()));
-			clpAction* selAction = dynamic_cast<clpAction*>(selected); 
-			cout << selAction->block.getOccupiedVolume() / s.cont->getVolume() << endl;
+			clpAction* selAction = dynamic_cast<clpAction*>(selected);
+			cout << selAction->block.getOccupiedVolume() << endl;
 		} else {
 			cerr << "Unknown command: " << cmd << endl;
 		}

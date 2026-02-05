@@ -27,19 +27,22 @@ public:
         list<Action*> actions;
         s.get_actions(actions);
 
-        vector<pair<double, Action*>> scored;
+        multimap<double, Action*> ranked_actions;
+
         for (auto a : actions) {
-            clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
-            if (!ca) continue;
-            ca->metrics.clear();
-            double val = vcs->eval_action(s, *a);
-            scored.push_back({val, a});
+            double eval = vcs->eval_action(s, *a);
+            if (eval > 0 && (ranked_actions.size() < w*w || ranked_actions.begin()->first < eval)) {
+                ranked_actions.insert(make_pair(eval, a));
+                if (ranked_actions.size() == w*w + 1) {
+                    ranked_actions.erase(ranked_actions.begin());
+                }
+            } else {
+                delete a;
+            }
         }
 
-        sort(scored.begin(), scored.end(),
-            [](const pair<double, Action*>& A, const pair<double, Action*>& B) {
-                return A.first > B.first;
-            });
+        vector<pair<double, Action*>> scored(ranked_actions.begin(), ranked_actions.end());
+        reverse(scored.begin(), scored.end()); // de mejor a peor
 
         int printed = 0;
         for (auto& p : scored) {
@@ -51,7 +54,6 @@ public:
             cout << endl;
             printed++;
         }
-        cout << "END" << endl;
     }
 
     // ======================================================
@@ -66,9 +68,11 @@ public:
                  << " " << bm.getNormW()
                  << " " << bm.getNormOccupiedVolumeCont()
                  << " " << bm.getBoxesAmountReciprocal()
+                 << " " << bm.getNormL() * bm.getNormW()
+                 << " " << bm.getNormW() * bm.getNormH()
+                 << " " << bm.getNormH() * bm.getNormL()
                  << endl;
         }
-        cout << "END" << endl;
     }
 
     // ======================================================
@@ -93,13 +97,23 @@ public:
             long by = anchors[1] ? (coords.getY() + block.getW()) * -1 : coords.getY();
             long bz = anchors[2] ? (coords.getZ() + block.getH()) * -1 : coords.getZ();
 
-            double rbx = (double)(bx - sx) / s.cont->getL();
-            double rby = (double)(by - sy) / s.cont->getW();
-            double rbz = (double)(bz - sz) / s.cont->getH();
+            double rbx = (double)(bx - sx);
+            double rby = (double)(by - sy);
+            double rbz = (double)(bz - sz);
 
-            cout << block.id << " " << rbx << " " << rby << " " << rbz << endl;
+            int contact = 1;
+            if ((rbx + block.getL() < 0) || (rbx > space.getL()) ||
+                (rby + block.getW() < 0) || (rby > space.getW()) ||
+                (rbz + block.getH() < 0) || (rbz > space.getH())) {
+                    contact = 0;
+            }
+
+            rbx /= s.cont->getL();
+            rby /= s.cont->getW();
+            rbz /= s.cont->getH();
+
+            cout << block.id << " " << rbx << " " << rby << " " << rbz << " " << contact << endl;
         }
-        cout << "END" << endl;
     }
 
     // ======================================================

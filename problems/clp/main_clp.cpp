@@ -17,10 +17,12 @@
 #include "VCS_Function.h"
 #include "SpaceSet.h"
 #include "Greedy.h"
+#include "DoubleEffort.h"
 #include "GlobalVariables.h"
 #include "BSG.h"
 #include "PathBuilder.h"
 #include "BlockMetrics.h"
+#include "DataPrinter.h"
 
 bool global::TRACE = false;
 
@@ -71,6 +73,7 @@ int main(int argc, char** argv){
 	args::ValueFlag<int> _inst(parser, "int", "Instance", {'i'});
 	args::ValueFlag<string> _format(parser, "string", "Format: (BR, BRw, 1C)", {'f'});
 	args::ValueFlag<double> _min_fr(parser, "double", "Minimum volume occupied by a block (proportion)", {"min_fr"});
+	args::ValueFlag<int> _maxtime(parser, "int", "Timelimit", {'t', "timelimit"});
 	args::ValueFlag<int> _w(parser, "int", "Beam width (nodes per level)", {'w'});
 	args::ValueFlag<int> _seed(parser, "int", "Random seed", {"seed"});
 	args::ValueFlag<double> _alpha(parser, "double", "Alpha parameter", {"alpha"});
@@ -114,8 +117,10 @@ int main(int argc, char** argv){
 	int inst=(_inst)? _inst.Get():0;
 	double min_fr=(_min_fr)? _min_fr.Get():0.98;
 	int w=(_w)? _w.Get():4;
+	int maxtime=(_maxtime)? _maxtime.Get():100;
 
 	double alpha=4.0, beta=1.0, gamma=0.2, delta=1.0, p=0.04;
+	if(_maxtime) maxtime=_maxtime.Get();
 	if(_alpha) alpha=_alpha.Get();
 	if(_beta) beta=_beta.Get();
 	if(_gamma) gamma=_gamma.Get();
@@ -147,146 +152,78 @@ int main(int argc, char** argv){
 	cout << "File("<< format <<"): " << file << endl;
 	cout << "Instance:" << inst+1 << endl;
 	cout << "min_fr:" << min_fr << endl;
-	cout << "Beam width:" << w << endl;
+
+	if (_maxtime)
+		cout << "Maxtime:" << maxtime << endl;
+	else
+		cout << "Beam width:" << w << endl;
 
 	double r=0.0; //0.0
-    //bool kdtree= false;
 
     Block::FSB=fsb;
     clpState* s0 = new_state(file,inst, min_fr, 10000, f);
 
-    //if(kdtree)
-      // s0 = new clpState_kd(*s0);
-
     cout << "n_blocks:"<< s0->get_n_valid_blocks() << endl;
-
-    clock_t begin_time=clock();
 
     VCS_Function* vcs = new VCS_Function(s0->nb_left_boxes, *s0->cont,
     alpha, beta, gamma, p, delta, 0.0, r);
-
-	/*if(kdtree){
-		kd_block::set_vcs(*vcs);
-		kd_block::set_alpha(alpha);
-		kd_block::set_alpha(p);
-	}*/
-
-	//for(int i=0;i<10000; i++)
-	//	exp->best_action(*s0);
 
 	cout << "greedy" << endl;
     SearchStrategy *gr = new Greedy (vcs);
 
 	cout << "bsg" << endl;
     BSG *bsg= new BSG(vcs,*gr, w, 0.0, 0, _plot);
-    //BSG_midBSG *bsg= new BSG_midBSG(*gr, *exp, 4);
-
-    //bsg->set_shuffle_best_path(true);
 
 	cout << "copying state" << endl;
 	State& s_copy= *s0->clone();
 
-   // cout << s0.valid_blocks.size() << endl;
-
 	cout << "running" << endl;
 
-    double eval=bsg->run(s_copy);
+	SearchStrategy *ss;
+	double eval;
+	// SOLO SI PARÁMETRO T ESTÁ ESTABLECIDO
+	if(_maxtime) {
+		clock_t begin_time = clock();
+		ss = new DoubleEffort(*bsg);
+		eval = ss->run(s_copy, maxtime, begin_time);
+	} else {
+		ss = bsg;
+		eval = ss->run(s_copy);
+	}
 
     cout << "% volume utilization" << endl;
 	cout << eval*100 << endl;
-	// << " " << de->get_best_state()->get_value2() << " " << eval*de->get_best_state()->get_value2() << endl;
 
-
-    if(_plot){
-    	pointsToTxt(&s_copy, 0);
-    	system("firefox problems/clp/tree_plot/index.html");
-    }
-
-
-  if(_verbose || _verbose2){
-	list<const Action*>& actions= dynamic_cast<const clpState*>(bsg->get_best_state())->get_path();
-	
 	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
-	for (const Block* block:s00->valid_blocks){
-		BlockMetrics blockMetrics = BlockMetrics(*block, *(s00->cont));
-		cout << "block:" << block->id << " metrics:";
-		cout << " " << blockMetrics.getNormL();
-		cout << " " << blockMetrics.getNormH();
-		cout << " " << blockMetrics.getNormW();
-		//cout << " " << blockMetrics.getNormOccupiedVolumeBlock();
-		cout << " " << blockMetrics.getNormOccupiedVolumeCont();
-		cout << " " << blockMetrics.getBoxesAmountReciprocal();
-		//cout << " " << blockMetrics.getStdBoxVolume();
+	PathBuilder pathBuilder = PathBuilder(*s00);
+	DataPrinter printer(&pathBuilder);
+
+  	if (_verbose || _verbose2) {
+		cout << "BLOCKS" << endl;
+		printer.printBlocks();
 		cout << endl;
-	}
 
-	cout << "Solve steps: " << endl;
+		list<const Action*>& actions= dynamic_cast<const clpState*>(ss->get_best_state())->get_path();
 
-	/* Métricas Estado */
-	clpState* s000 = dynamic_cast<clpState*> (s0->clone());
-	PathBuilder path_builder = PathBuilder(*s000);
+		cout << "SOLVE STEPS" << endl;
 
-	for(auto action:actions){
-		const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
+		for(auto action:actions) {
+			cout << "Actions" << endl;
+			printer.printActions(vcs, w);
 
-		list< Action* > best_actions;
-		if (_verbose2){
-			gr->get_best_actions(*s00, best_actions, _verbose2.Get());
-			best_actions.push_back(new clpAction(*clp_action));
+			cout << "Placed" << endl;
+			printer.printPlaced();
+
+			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
+			pathBuilder.addAction(clp_action);
+
+			cout << "Selected Block" << endl;
+			cout << clp_action->block.id << endl;
+
+			cout << "Volume" << endl;
+			printer.printVolume();
+
+			cout << endl;
 		}
-
-		s00->transition(*clp_action);
-		cout << "selected block:" << clp_action->block.id << " space:" << clp_action->space.get_location(clp_action->block) << endl;
-
-		set<int> visited;
-		if(_verbose2){	
-			for (auto act:best_actions){
-				const clpAction* clp_act = dynamic_cast<const clpAction*> (act);
-				if (visited.find(clp_act->block.id) != visited.end()) continue;
-				visited.insert(clp_act->block.id);
-
-				//clp_act->metrics.push_back(path_builder.getTotalVolumeRatio());
-				//clp_act->metrics.push_back(path_builder.getAvgVolumeRatio());
-
-				const auto& vol_ratios = path_builder.getQuadrantVolumeRatio();
-				//clp_act->metrics.insert(clp_act->metrics.end(), vol_ratios.begin(), vol_ratios.end());
-
-				const auto& max_vol_ratios = path_builder.getQuadrantMaxVolumeRatio();
-				//clp_act->metrics.insert(clp_act->metrics.end(), max_vol_ratios.begin(), max_vol_ratios.end());
-
-				std::cout << "  action block:" << clp_act->block.id << " eval: ";
-				for (auto it = clp_act->metrics.begin(); it != clp_act->metrics.end(); ++it) 
-					std::cout << *it << " ";
-				
-				std::cout << std::endl;
-			}
-		}
-
-		path_builder.addAction(clp_action);
 	}
-
-
-}
-
-
-   if(_json){
-	   	bool first;
-		cout << "{\"remaining\" :["; first=true;
-		for(auto b:dynamic_cast<const clpState*>(bsg->get_best_state())->nb_left_boxes)
-		    if(b.second > 0){
-			   if(first)  first=false; else cout << "," ;
-			   cout << "[" << b.first->get_id() << "," << b.second << "]";
-			}
-		cout << "], \"loaded\" :["; first=true;
-		for(auto b:dynamic_cast<const clpState*>(bsg->get_best_state())->nb_left_boxes){
-			int load = s0->nb_left_boxes[b.first] -b.second;
-			if(load>0){
-			   if(first)  first=false; else cout << "," ;
-			   cout << "[" <<  b.first->get_id() << "," << load << "]";
-			}
-		}
-		cout << "], \"utilization\" : " << eval << "}"<<endl;
-	}
-
-
 }

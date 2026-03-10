@@ -100,7 +100,7 @@ public:
 	void set_beams(int b){beams=b;}
 
 
-protected:
+public:
 
 	template<class map_container>
 	list<State*> get_next_states(map_container& sorted_states){

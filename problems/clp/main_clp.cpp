@@ -8,7 +8,6 @@
 #include <iostream>
 #include <fstream>
 #include "args.hxx"
-//#include "objects/State.cpp"
 #include "clpState.h"
 #include "clpStatekd.h"
 #include "BlockSet.h"
@@ -20,7 +19,6 @@
 #include "DoubleEffort.h"
 #include "GlobalVariables.h"
 #include "BSG.h"
-#include "PathBuilder.h"
 #include "BlockMetrics.h"
 #include "DataPrinter.h"
 
@@ -195,11 +193,10 @@ int main(int argc, char** argv){
 	cout << eval*100 << endl;
 
 	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
-	PathBuilder pathBuilder = PathBuilder(*s00);
-	DataPrinter printer(&pathBuilder);
 
   	if (_verbose || _verbose2) {
 		cout << "BLOCKS" << endl;
+		DataPrinter printer(s00);
 		printer.printBlocks();
 		cout << endl;
 
@@ -215,7 +212,9 @@ int main(int argc, char** argv){
 			printer.printPlaced();
 
 			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
-			pathBuilder.addAction(clp_action);
+
+			cout << "Space" << endl;
+			printer.printSpace();	
 
 			cout << "Selected Block" << endl;
 			cout << clp_action->block.id << endl;
@@ -224,6 +223,8 @@ int main(int argc, char** argv){
 			printer.printVolume();
 
 			cout << endl;
+
+			s00->transition(*action);
 		}
 	}
 }

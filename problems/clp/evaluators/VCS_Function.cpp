@@ -80,9 +80,6 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 	// Métricas de la acción
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(loss);
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs_all);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(sp.getL() / (double) ss->cont->getL());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(sp.getW() / (double) ss->cont->getW());
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(sp.getH() / (double) ss->cont->getH());
 
 	return eval;
 }

@@ -64,11 +64,12 @@ int main(int argc, char **argv)
 	VCS_Function *vcs = new VCS_Function(s0->nb_left_boxes, *s0->cont, alpha, beta, gamma, p, delta, 0.0, r);
 	SearchStrategy *gr = new Greedy(vcs);
 
+	clpState *best_state = s0;
+	double best_volume = 0;
+
 	// --bsm
 	BSG *bsg;
 	std::list<clpState *> current_nodes;
-	clpState *best_state;
-	double best_volume;
 
 	// no --bsm
 	clpState *current_state;
@@ -77,8 +78,6 @@ int main(int argc, char **argv)
 	{
 		bsg = new BSG(vcs, *gr, w);
 		current_nodes.push_back(s0);
-		best_state = s0;
-		double best_volume = 0;
 	}
 	else
 	{
@@ -124,6 +123,15 @@ int main(int argc, char **argv)
 				{
 					DataPrinter printer(n);
 					printer.printPlaced();
+					std::cout << "END" << endl;
+				}
+			}
+			else if (cmd == "-S")
+			{
+				for (auto n : current_nodes)
+				{
+					DataPrinter printer(n);
+					printer.printSpace();
 					std::cout << "END" << endl;
 				}
 			}
@@ -194,6 +202,7 @@ int main(int argc, char **argv)
 							State *state_copy = s->clone();
 							state_copy->transition(*selected);
 							double value = gr->run(*state_copy);
+							//cout << value << endl;
 							state_actions[value] = make_pair(s, state_copy);
 
 							if (value > best_volume)
@@ -203,6 +212,7 @@ int main(int argc, char **argv)
 							}
 						}
 					}
+					i++;
 				}
 
 				list<State *> l = bsg->get_next_states(state_actions);
@@ -217,6 +227,7 @@ int main(int argc, char **argv)
 					}
 				}
 				std::cout << current_nodes.size() << endl;
+				//std::cout << "END" << endl;
 			}
 			else
 			{
@@ -242,9 +253,15 @@ int main(int argc, char **argv)
 				printer.printPlaced();
 				std::cout << "END" << endl;
 			}
+			else if (cmd == "-S")
+			{
+				printer.printSpace();
+				std::cout << "END" << endl;
+			}
 			else if (cmd == "-V")
 			{
-				printer.printVolume();
+				DataPrinter printer_best(best_state);
+				printer_best.printVolume();
 				std::cout << "END" << endl;
 			}
 			else if (cmd == "-T")

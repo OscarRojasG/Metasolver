@@ -14,6 +14,13 @@ using namespace metasolver;
 // define global TRACE flag used by some modules
 bool metasolver::global::TRACE = false;
 
+// Definimos una estructura para mantener el hilo de Ariadna de cada estado en el batch
+struct BatchItem {
+	clpState* current;          // El estado que se va transformando (el "runner")
+	clpState* original_node;    // El nodo del cual partió la expansión (s)
+	clpState* first_transition; // El estado justo después de la primera acción
+};
+
 int main(int argc, char **argv)
 {
 	args::ArgumentParser parser("********* BSG-ENV *********.", "BSG Environment for CLP.");
@@ -108,14 +115,12 @@ int main(int argc, char **argv)
 				{
 					DataPrinter printer(n);
 					printer.printActions(vcs, w);
-					std::cout << "END" << endl;
 				}
 			}
 			else if (cmd == "-B")
 			{
 				DataPrinter printer(current_nodes.front());
 				printer.printBlocks();
-				std::cout << "END" << endl;
 			}
 			else if (cmd == "-P")
 			{
@@ -123,7 +128,6 @@ int main(int argc, char **argv)
 				{
 					DataPrinter printer(n);
 					printer.printPlaced();
-					std::cout << "END" << endl;
 				}
 			}
 			else if (cmd == "-S")
@@ -132,13 +136,13 @@ int main(int argc, char **argv)
 				{
 					DataPrinter printer(n);
 					printer.printSpace();
-					std::cout << "END" << endl;
 				}
 			}
 			else if (cmd == "-V")
 			{
-				cout << best_volume << endl;
-				std::cout << "END" << endl;
+				float volume = static_cast<float>(best_volume);
+				std::fwrite(&volume, sizeof(float), 1, stdout);
+				std::fflush(stdout);
 			}
 			else if (cmd == "-T")
 			{
@@ -180,78 +184,98 @@ int main(int argc, char **argv)
 
 				map<double, pair<State *, State *>> state_actions;
 				int i = 0;
-				for (auto s : current_nodes)
-				{
-					for (auto id : listas[i])
-					{
-						list<Action *> actions;
+
+				// 1. Inicializar el batch con la estructura de rastreo
+				vector<BatchItem> batch_items; 
+				for (auto s : current_nodes) {
+					for (auto id : listas[i]) {
+						list<Action*> actions;
 						s->get_actions(actions);
-						Action *selected = nullptr;
-						for (auto a : actions)
-						{
-							clp::clpAction *ca = dynamic_cast<clp::clpAction *>(a);
-							if (ca && ca->block.id == id)
-							{
-								selected = a;
+						for (auto a : actions) {
+							clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
+							if (ca && ca->block.id == id) {
+								clpState* state_copy = dynamic_cast<clp::clpState*>(s->clone());
+								state_copy->transition(*a);
+								
+								// Guardamos el clon original de la primera transición para el make_pair final
+								clpState* first_child = dynamic_cast<clp::clpState*>(state_copy->clone());
+								
+								batch_items.push_back({state_copy, s, first_child});
 								break;
-							}
-						}
-						if (selected)
-						{
-							clpState *state_copy = dynamic_cast<clp::clpState *>(s->clone());
-							state_copy->transition(*selected);
-							clpState *state_copy_original = dynamic_cast<clp::clpState *>(state_copy->clone());
-
-							DataPrinter succ_printer(state_copy);
-							list<Action *> succ_actions;
-
-							while (true) {
-								succ_actions.clear();
-								state_copy->get_actions(succ_actions);
-								if (succ_actions.size() == 0) {
-									double volume = state_copy->get_value();
-									state_actions[-volume] = make_pair(s, state_copy_original);
-
-									if (volume > best_volume)
-										best_volume = volume;
-
-									break;
-								}
-
-								std::cout << "GREEDY" << endl;
-								succ_printer.printActions(vcs, w);
-								std::cout << "END" << endl;
-								succ_printer.printPlaced();
-								std::cout << "END" << endl;
-								succ_printer.printSpace();
-								std::cout << "END" << endl;
-
-								if (!std::getline(cin, line))
-									break; // EOF
-								if (line.size() == 0)
-									continue;
-
-								std::stringstream ss2(line);
-								int id2;
-								ss2 >> id2;
-
-								for (auto a2 : succ_actions)
-								{
-									clp::clpAction *ca2 = dynamic_cast<clp::clpAction *>(a2);
-									if (ca2 && ca2->block.id == id2)
-									{
-										state_copy->transition(*a2);
-										break;
-									}
-								}
 							}
 						}
 					}
 					i++;
 				}
-				std::cout << "END GREEDY" << endl;
 
-				list<State *> l = bsg->get_next_states(state_actions);
+				// 2. Bucle de niveles
+				while (!batch_items.empty()) {
+					vector<BatchItem> active_batch;
+					
+					for (auto& item : batch_items) {
+						list<Action*> succ_actions;
+						item.current->get_actions(succ_actions);
+						
+						if (!succ_actions.empty()) {
+							active_batch.push_back(item);
+						} else {
+							// ¡Llegamos a una hoja! 
+							double volume = item.current->get_value();
+							
+							// Ahora sí tenemos todas las piezas para el pair
+							state_actions[-volume] = make_pair(item.original_node, item.first_transition);
+
+							if (volume > best_volume)
+								best_volume = volume;
+						}
+					}
+
+					if (active_batch.empty()) break;
+
+					// ENVIAR BATCH A PYTHON
+					uint8_t signal = 0; 
+					uint32_t num_to_process = active_batch.size();
+					std::fwrite(&signal, sizeof(uint8_t), 1, stdout);
+					std::fwrite(&num_to_process, sizeof(uint32_t), 1, stdout);
+
+					for (auto& item : active_batch) {
+						DataPrinter printer(item.current);
+						printer.printActions(vcs, w);
+					}
+					for (auto& item : active_batch) {
+						DataPrinter printer(item.current);
+						printer.printPlaced();
+					}
+					for (auto& item : active_batch) {
+						DataPrinter printer(item.current);
+						printer.printSpace();
+					}
+					std::fflush(stdout);
+
+					// RECIBIR RESPUESTAS Y APLICAR TRANSICIONES
+					string response_line;
+					if (std::getline(cin, response_line) && !response_line.empty()) {
+						std::stringstream ss(response_line);
+						for (int n = 0; n < active_batch.size(); ++n) {
+							int action_id;
+							if (!(ss >> action_id)) break;
+
+							list<Action*> actions;
+							active_batch[n].current->get_actions(actions);
+							for (auto a : actions) {
+								clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
+								if (ca && ca->block.id == action_id) {
+									active_batch[n].current->transition(*a);
+									break;
+								}
+							}
+						}
+					}
+					
+					batch_items = active_batch; 
+				}
+
+				list<State*> l = bsg->get_next_states(state_actions);
 				current_nodes.clear();
 				for (State *s : l)
 				{
@@ -262,8 +286,11 @@ int main(int argc, char **argv)
 						current_nodes.push_back(static_cast<clpState *>(s));
 					}
 				}
-				std::cout << current_nodes.size() << endl;
-				std::cout << "END" << endl;
+
+				uint8_t signal = 1; 
+				uint32_t num_to_process = current_nodes.size();
+				std::fwrite(&signal, sizeof(uint8_t), 1, stdout);
+				std::fwrite(&num_to_process, sizeof(uint32_t), 1, stdout);
 			}
 			else
 			{

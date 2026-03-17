@@ -75,7 +75,6 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 	}
 
 	eval= (pow(vol, delta)  * pow((1.0-loss),beta) * pow(cs_all,alpha) * pow(n,gamma) );
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(eval);
 
 	// Métricas de la acción
 	dynamic_cast<const clpAction*>(&a)->metrics.push_back((loss < 0) ? 0.0 : loss);

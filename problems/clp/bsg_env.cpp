@@ -137,8 +137,7 @@ int main(int argc, char **argv)
 			}
 			else if (cmd == "-V")
 			{
-				DataPrinter printer(best_state);
-				printer.printVolume();
+				cout << best_volume << endl;
 				std::cout << "END" << endl;
 			}
 			else if (cmd == "-T")
@@ -199,21 +198,58 @@ int main(int argc, char **argv)
 						}
 						if (selected)
 						{
-							State *state_copy = s->clone();
+							clpState *state_copy = dynamic_cast<clp::clpState *>(s->clone());
 							state_copy->transition(*selected);
-							double value = gr->run(*state_copy);
-							//cout << value << endl;
-							state_actions[value] = make_pair(s, state_copy);
+							clpState *state_copy_original = dynamic_cast<clp::clpState *>(state_copy->clone());
 
-							if (value > best_volume)
-							{
-								best_volume = value;
-								best_state = dynamic_cast<clp::clpState *>(state_copy->clone());
+							DataPrinter succ_printer(state_copy);
+							list<Action *> succ_actions;
+
+							while (true) {
+								succ_actions.clear();
+								state_copy->get_actions(succ_actions);
+								if (succ_actions.size() == 0) {
+									double volume = state_copy->get_value();
+									state_actions[-volume] = make_pair(s, state_copy_original);
+
+									if (volume > best_volume)
+										best_volume = volume;
+
+									break;
+								}
+
+								std::cout << "GREEDY" << endl;
+								succ_printer.printActions(vcs, w);
+								std::cout << "END" << endl;
+								succ_printer.printPlaced();
+								std::cout << "END" << endl;
+								succ_printer.printSpace();
+								std::cout << "END" << endl;
+
+								if (!std::getline(cin, line))
+									break; // EOF
+								if (line.size() == 0)
+									continue;
+
+								std::stringstream ss2(line);
+								int id2;
+								ss2 >> id2;
+
+								for (auto a2 : succ_actions)
+								{
+									clp::clpAction *ca2 = dynamic_cast<clp::clpAction *>(a2);
+									if (ca2 && ca2->block.id == id2)
+									{
+										state_copy->transition(*a2);
+										break;
+									}
+								}
 							}
 						}
 					}
 					i++;
 				}
+				std::cout << "END GREEDY" << endl;
 
 				list<State *> l = bsg->get_next_states(state_actions);
 				current_nodes.clear();
@@ -227,7 +263,7 @@ int main(int argc, char **argv)
 					}
 				}
 				std::cout << current_nodes.size() << endl;
-				//std::cout << "END" << endl;
+				std::cout << "END" << endl;
 			}
 			else
 			{

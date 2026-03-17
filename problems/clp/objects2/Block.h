@@ -108,6 +108,8 @@ public:
     */
 	AABBContainer<AABB>* blocks;
 
+	static set<const Block*, block_order> all_blocks;
+
 
 protected:
 
@@ -152,8 +154,6 @@ protected:
 	double total_weight;
 
 	double total_profit;
-
-	static set<const Block*, block_order> all_blocks;
 
 
 };

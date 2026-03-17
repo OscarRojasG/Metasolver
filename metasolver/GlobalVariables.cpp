@@ -8,6 +8,7 @@
 #include "GlobalVariables.h"
 
 namespace metasolver {
-
-
-} /* namespace clp */
+    namespace global {
+        bool TRACE = false;
+    }
+}

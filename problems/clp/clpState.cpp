@@ -19,7 +19,6 @@ using namespace metasolver;
 
 namespace clp {
 
-
 void clpState::get_actions(list< Action* >& actions) const{
 	list<const Block*>::const_iterator it;
 
@@ -175,8 +174,11 @@ double clpState::Wmax=0.0;
 int clpState::nb_boxes=0;
 
 clpState* new_state(string file, int i, double min_fr, int max_bl, clpState::Format f, clpState::FormatP fp){
-
-  clpState::weight_of_allboxes=0.0;
+	Block::INCREMENTAL_ID = 0;
+	BoxShape::INCREMENTAL_ID = 0;
+    Block::all_blocks.clear();
+  	clpState::nb_boxes = 0;
+	clpState::left = true;
 
 	ifstream in(file.c_str());
 	string line;
@@ -199,7 +201,6 @@ clpState* new_state(string file, int i, double min_fr, int max_bl, clpState::For
 			std::stringstream ss(line);
 			long l,w,h;
 			ss >> l >> w >> h;
-			cout << l << " " <<  w << " " << h << endl;
 			//if(f==clpState::_1C) {l*=10; w*=10; h*=10;}
 			s= new clpState((Block::FSB)? new Block_fsb(l,w,h):new Block(l,w,h));
 		}

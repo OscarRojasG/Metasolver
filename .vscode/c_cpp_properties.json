@@ -4,7 +4,9 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/problems/clp/objects2"
+                "${workspaceFolder}/problems/clp/objects2",
+                "/usr/include/python3.13",
+                "${workspaceFolder}/problems/clp"
             ],
             "defines": [],
             "compilerPath": "/usr/sbin/gcc",

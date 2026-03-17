@@ -22,8 +22,6 @@
 #include "BlockMetrics.h"
 #include "DataPrinter.h"
 
-bool global::TRACE = false;
-
 using namespace std;
 
 // para ejecutar (menos de 30 tipos de caja): BSG_CLP problems/clp/benchs/BR/BR7.txt 1 1.0 30 4.0 1.0 0.2 0.04 1.0 0.0 0.0 0 0

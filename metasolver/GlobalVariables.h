@@ -10,10 +10,9 @@
 
 namespace metasolver {
 
-class global{
-public:
-	static bool TRACE;
-};
+	namespace global {
+        extern bool TRACE;
+    }
 
 } /* namespace clp */
 

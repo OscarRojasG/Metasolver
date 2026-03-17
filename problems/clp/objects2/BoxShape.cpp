@@ -10,8 +10,17 @@
 
 namespace clp {
 
-BoxShape::BoxShape(int id, double l, double w, double h, bool rot1, bool rot2, bool rot3, double weight, double profit) :
-	Volume(l,w,h), id(id), weight(weight), profit(profit) {
+
+// Inicialización del contador estático
+int BoxShape::INCREMENTAL_ID = 0;
+
+BoxShape::BoxShape(int external_id, double l, double w, double h, bool rot1, bool rot2, bool rot3, double weight, double profit) : 
+    Volume(l, w, h), weight(weight), profit(profit) {
+    
+    // Ignoramos el external_id del archivo y usamos nuestro contador determinista
+    // para asegurar que en la Ejecución 2 los IDs sean idénticos a la Ejecución 1.
+    this->id = INCREMENTAL_ID++;
+
     is_valid_orientation[LWH] = true;
     is_valid_orientation[WLH]=rot3;
     //is_valid_orientation[LWH]=rot3;

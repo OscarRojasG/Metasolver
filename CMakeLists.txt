@@ -1,8 +1,13 @@
-# HelloWorld is a minimal sample creating, stepping and deleting a Bullet dynamics world
+cmake_minimum_required(VERSION 3.12) # Aumentado para mejor soporte de Python
+project(CLP_Project)
 
-cmake_minimum_required(VERSION 3.1)
-set (CMAKE_CXX_STANDARD 11)
-# SET (CMAKE_CXX_COMPILER "/usr/bin/clang++")
+# 1. Configuración de C++
+set(CMAKE_CXX_STANDARD 14) # Recomendado 14 para pybind11
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON) # CRÍTICO para crear módulos de Python (.so)
+
+# 2. Localizar Python y pybind11
+add_subdirectory(extern/pybind11)
 
 INCLUDE_DIRECTORIES(
 lib/bullet-2.80/src
@@ -32,7 +37,7 @@ LINK_LIBRARIES(
     endif(COMMAND cmake_policy)
 
 
- SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -no-pie")
+ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 # ADD_DEFINITION(-g -pg)
 
@@ -88,6 +93,32 @@ problems/clp/plugins/kdtree/clpStatekd.cpp
 problems/clp/plugins/kdtree/kdNode.cpp
 problems/clp/plugins/kdtree/BlockSet.cpp
 )
+
+pybind11_add_module(bsm_engine 
+    problems/clp/binding.cpp # Aquí crearás el archivo de unión
+)
+
+# ESTO ES LO QUE SOLUCIONA EL UNDEFINED SYMBOL:
+# Forzamos al linker a meter TODO el contenido de bsg y clp
+if(UNIX)
+    target_link_libraries(bsm_engine PRIVATE 
+        -Wl,--whole-archive 
+        bsg 
+        clp 
+        clp_state 
+        clp_kdtree
+        -Wl,--no-whole-archive
+        # Estas se vinculan normal
+        BulletDynamics 
+        BulletCollision 
+        LinearMath
+    )
+else()
+    # Para otros sistemas (Mac/Windows)
+    target_link_libraries(bsm_engine PRIVATE 
+        bsg clp clp_state clp_kdtree BulletDynamics BulletCollision LinearMath
+    )
+endif()
 
 
 ADD_EXECUTABLE(MCLP problems/mclp/main/mclp-solver.cpp)

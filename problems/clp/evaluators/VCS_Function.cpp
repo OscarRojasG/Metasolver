@@ -19,16 +19,16 @@ using namespace std;
 
 namespace clp {
 
-VCS_Function::VCS_Function(map<const BoxShape*, int>& nb_boxes, Vector3& dims, double alpha, double beta,
-		double gamma, double p, double delta, double delta2, double delta3, double r):
-		VLossFunction (nb_boxes, dims, r), alpha(alpha),
-		beta(beta), gamma(gamma), p(p), delta(delta), delta2(delta2), delta3(delta3),
-		alpha_2(alpha),beta_2(beta), gamma_2(gamma), p_2(p), delta_2(delta),
-		delta2_2(delta2), delta3_2(delta3){ }
+// Implementación del constructor con el mapa determinista
+VCS_Function::VCS_Function(std::map<const BoxShape*, int, BoxShapeComparator>& nb_boxes, Vector3& dims, 
+                           double alpha, double beta, double gamma, double p, 
+                           double delta, double delta2, double delta3, double r) :
+        VLossFunction(nb_boxes, dims, r), // Pasa el mapa determinista a la base
+        alpha(alpha), beta(beta), gamma(gamma), p(p), delta(delta), delta2(delta2), delta3(delta3),
+        alpha_2(alpha), beta_2(beta), gamma_2(gamma), p_2(p), delta_2(delta),
+        delta2_2(delta2), delta3_2(delta3) { }
 
-VCS_Function::~VCS_Function(){
-
-}
+VCS_Function::~VCS_Function() { }
 
 
 
@@ -77,8 +77,10 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 	eval= (pow(vol, delta)  * pow((1.0-loss),beta) * pow(cs_all,alpha) * pow(n,gamma) );
 
 	// Métricas de la acción
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back((loss < 0) ? 0.0 : loss);
-	dynamic_cast<const clpAction*>(&a)->metrics.push_back(cs_all);
+	auto* ca = dynamic_cast<const clpAction*>(&a);
+	ca->metrics.clear();
+	ca->metrics.push_back((loss < 0) ? 0.0 : loss);
+    ca->metrics.push_back(cs_all);
 
 	return eval;
 }

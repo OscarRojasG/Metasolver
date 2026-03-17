@@ -23,6 +23,8 @@ using namespace metasolver;
 
 namespace clp {
 
+class BoxShape; // Forward declaration
+
 class BlockSet;
 class clpState;
 
@@ -105,7 +107,7 @@ public:
 
 	//member variables
 	Block* cont;
-	map<const BoxShape*, int> nb_left_boxes;
+	std::map<const BoxShape*, int, BoxShapeComparator> nb_left_boxes;
 	list<const Block*> valid_blocks;
 
 	virtual void print() {

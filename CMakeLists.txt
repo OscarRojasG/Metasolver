@@ -95,30 +95,15 @@ problems/clp/plugins/kdtree/BlockSet.cpp
 )
 
 pybind11_add_module(bsm_engine 
-    problems/clp/binding.cpp # Aquí crearás el archivo de unión
+    problems/clp/envs/bsm_gm.cpp
+    problems/clp/envs/bsm_vcs.cpp
+    problems/clp/envs/binding.cpp
 )
 
-# ESTO ES LO QUE SOLUCIONA EL UNDEFINED SYMBOL:
-# Forzamos al linker a meter TODO el contenido de bsg y clp
-if(UNIX)
-    target_link_libraries(bsm_engine PRIVATE 
-        -Wl,--whole-archive 
-        bsg 
-        clp 
-        clp_state 
-        clp_kdtree
-        -Wl,--no-whole-archive
-        # Estas se vinculan normal
-        BulletDynamics 
-        BulletCollision 
-        LinearMath
-    )
-else()
-    # Para otros sistemas (Mac/Windows)
-    target_link_libraries(bsm_engine PRIVATE 
-        bsg clp clp_state clp_kdtree BulletDynamics BulletCollision LinearMath
-    )
-endif()
+target_link_libraries(bsm_engine PRIVATE 
+    -Wl,--whole-archive bsg clp clp_state clp_kdtree -Wl,--no-whole-archive
+    BulletDynamics BulletCollision LinearMath
+)
 
 
 ADD_EXECUTABLE(MCLP problems/mclp/main/mclp-solver.cpp)

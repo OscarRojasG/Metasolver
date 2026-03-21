@@ -11,7 +11,7 @@ class BSM_VCS : public BSM_ENV {
 public:
     SearchStrategy *gr;
 
-    BSM_VCS(std::string filename, int instance_number, int w);
+    BSM_VCS(std::string filename, int instance_number, int w, double min_fr=1);
 
     BSM_VCS(clpState* s0, int w, double timelimit = 99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now());
 

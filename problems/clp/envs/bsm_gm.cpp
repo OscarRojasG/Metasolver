@@ -2,7 +2,7 @@
 
 namespace py = pybind11;
 
-BSM_GM::BSM_GM(std::string filename, int instance_number, int w) : BSM_ENV(filename, instance_number, w) {}
+BSM_GM::BSM_GM(std::string filename, int instance_number, int w, double min_fr) : BSM_ENV(filename, instance_number, w) {}
 
 BSM_GM::BSM_GM(clpState* s0, int w, double timelimit, std::chrono::steady_clock::time_point start_time) : BSM_ENV(s0, w, timelimit, start_time) {}
 
@@ -120,10 +120,11 @@ void BSM_GM::update_batches_greedy() {
 
 void register_bsm_gm(py::module &m) {
     py::class_<BSM_GM>(m, "BSM_GM")
-        .def(py::init<std::string, int, int>(), 
+        .def(py::init<std::string, int, int, double>(), 
                 py::arg("filename"), 
                 py::arg("instance_number"), 
-                py::arg("w"))
+                py::arg("w"),
+                py::arg("min_fr"))
         .def_readwrite("best_volume", &BSM_GM::best_volume)
         .def_readwrite("w", &BSM_GM::w)
 

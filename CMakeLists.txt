@@ -97,6 +97,7 @@ problems/clp/plugins/kdtree/BlockSet.cpp
 pybind11_add_module(bsm_engine 
     problems/clp/envs/bsm_gm.cpp
     problems/clp/envs/bsm_vcs.cpp
+    problems/clp/envs/greedy_model.cpp
     problems/clp/envs/binding.cpp
 )
 
@@ -116,7 +117,6 @@ ADD_EXECUTABLE(test_BSGMOP_CLP problems/clp/test_clp_mop.cpp)
 #ADD_EXECUTABLE(testEvalMOP problems/clp/test_evalMOP.cpp)
 ADD_EXECUTABLE(CLP_gen problems/clp/ClpInstanceGenerator.cpp)
 ADD_EXECUTABLE(NSGA_CLP problems/clp/plugins/ga/main.cpp)
-ADD_EXECUTABLE(BSG_ENV problems/clp/bsg_env.cpp)
 
 target_link_libraries(MCLP mclp_state  clp bsg)
 target_link_libraries(BSG_CLP clp_state clp clp_kdtree bsg)
@@ -124,7 +124,6 @@ target_link_libraries(BSG_CLP_ANN clp_state clp clp_kdtree bsg)
 target_link_libraries(test_BSG_CLP clp_state clp clp_kdtree bsg)
 target_link_libraries(CLP_GENSOLV clp_state clp clp_kdtree bsg)
 target_link_libraries(NSGA_CLP clp_state clp nsga2 bsg)
-target_link_libraries(BSG_ENV clp_state clp bsg)
 
 target_link_libraries(BSG_B bsg_mop clp_state clp bsg)
 target_link_libraries(test_BSGMOP_CLP bsg_mop clp_state clp bsg)

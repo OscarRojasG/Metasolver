@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-BSM_VCS::BSM_VCS(std::string filename, int instance_number, int w) : BSM_VCS(new_state(filename, instance_number, 0.98, 10000, clpState::BR), w) {}
+BSM_VCS::BSM_VCS(std::string filename, int instance_number, int w, double min_fr) : BSM_VCS(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w) {}
 
 BSM_VCS::BSM_VCS(clpState* s0, int w, double timelimit, std::chrono::steady_clock::time_point start_time) : BSM_ENV(s0, w, timelimit, start_time) {
     gr = new Greedy(vcs);
@@ -50,10 +50,11 @@ void BSM_VCS::transition(std::vector<std::vector<int>> selected_indexes_lists) {
 
 void register_bsm_vcs(py::module &m) {
     py::class_<BSM_VCS>(m, "BSM_VCS")
-        .def(py::init<std::string, int, int>(), 
+        .def(py::init<std::string, int, int, double>(), 
                 py::arg("filename"), 
-                py::arg("instance_number"), 
-                py::arg("w"))
+                py::arg("instance_number"),
+                py::arg("w"),
+                py::arg("min_fr"))
         .def_readwrite("best_volume", &BSM_VCS::best_volume)
         .def_readwrite("w", &BSM_VCS::w)
 

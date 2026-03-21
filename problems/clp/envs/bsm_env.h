@@ -39,8 +39,8 @@ public:
         EnvUtilsPython::get_blocks_data(s0, block_features, block_id_to_index, block_index_to_id);
     }
 
-    BSM_ENV(std::string filename, int instance_number, int w, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now()) 
-        : BSM_ENV(new_state(filename, instance_number, 0.98, 10000, clpState::BR), w, timelimit, start_time) {}
+    BSM_ENV(std::string filename, int instance_number, int w, double min_fr=0.98, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now()) 
+        : BSM_ENV(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w, timelimit, start_time) {}
 
     py::array_t<float> get_block_features() {
         return block_features;

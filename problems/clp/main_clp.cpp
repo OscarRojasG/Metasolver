@@ -13,7 +13,6 @@
 #include "BlockSet.h"
 #include "BSG_midBSG.h"
 #include "VCS_Function.h"
-#include "VCS_Function.h"
 #include "SpaceSet.h"
 #include "Greedy.h"
 #include "DoubleEffort.h"

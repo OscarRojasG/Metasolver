@@ -109,6 +109,7 @@ target_link_libraries(bsm_engine PRIVATE
 
 ADD_EXECUTABLE(MCLP problems/mclp/main/mclp-solver.cpp)
 ADD_EXECUTABLE(BSG_CLP problems/clp/main_clp.cpp)
+ADD_EXECUTABLE(VCS problems/clp/vcs.cpp)
 ADD_EXECUTABLE(BSG_CLP_ANN problems/clp/plugins/ann/main_clp_ann.cpp)
 ADD_EXECUTABLE(CLP_GENSOLV problems/clp/plugins/ann/gen_ran_inst_solve.cpp)
 ADD_EXECUTABLE(test_BSG_CLP problems/clp/test_clp.cpp)
@@ -120,6 +121,7 @@ ADD_EXECUTABLE(NSGA_CLP problems/clp/plugins/ga/main.cpp)
 
 target_link_libraries(MCLP mclp_state  clp bsg)
 target_link_libraries(BSG_CLP clp_state clp clp_kdtree bsg)
+target_link_libraries(VCS clp_state clp bsg)
 target_link_libraries(BSG_CLP_ANN clp_state clp clp_kdtree bsg)
 target_link_libraries(test_BSG_CLP clp_state clp clp_kdtree bsg)
 target_link_libraries(CLP_GENSOLV clp_state clp clp_kdtree bsg)

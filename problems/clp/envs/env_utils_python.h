@@ -58,7 +58,7 @@ public:
         int32_t* p_blocks = action_blocks.mutable_data();
         float* p_features = action_features.mutable_data();
 
-        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, p_blocks, p_features);
+        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, p_blocks, p_features, limit);
     }
 
     static void get_placed_data(clpState* state, map<int, int>& block_id_to_index, py::array_t<int32_t>& placed_blocks, py::array_t<float>& placed_features) {

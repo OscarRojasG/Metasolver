@@ -11,6 +11,7 @@
 class ENV {
 public:
     double timelimit;
+    double final_time = 0;
     clpState* s0;
 
     ENV(clpState* s0, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now()) {
@@ -18,8 +19,6 @@ public:
         this->timelimit = timelimit;
         this->start_time = start_time;
     }
-
-    ENV(std::string filename, int instance_number, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now()) {}
 
 protected:
     std::chrono::steady_clock::time_point start_time;

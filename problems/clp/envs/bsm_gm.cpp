@@ -8,6 +8,10 @@ BSM_GM::BSM_GM(clpState* s0, int w, double timelimit, std::chrono::steady_clock:
 
 void BSM_GM::transition_bsm(std::vector<std::vector<int>> selected_indexes_lists) {
     BSM_ENV::transition(selected_indexes_lists);
+    if (batch_items.size() == 0) {
+        for (State *s : current_nodes) delete s;
+        current_nodes.clear();
+    }
 }
 
 void BSM_GM::transition_greedy(std::vector<int> selected_indexes) {
@@ -35,28 +39,22 @@ void BSM_GM::transition_greedy(std::vector<int> selected_indexes) {
     std::vector<BatchItem> remaining_items; // Para guardar los que no son hojas
 
     for (auto& item : batch_items) {
-        if (get_elapsed_time() > timelimit) {
-            batch_items.clear();
-            return;
-        }
-
         std::list<Action*> next_actions;
         item.current->get_actions(next_actions);
 
         if (next_actions.empty()) {
-            // ¡Es una hoja! 
             double volume = item.current->get_value();
             
-            // Actualizar el mejor volumen global
-            if (volume > best_volume) {
+            if (volume > best_volume && get_elapsed_time() <= timelimit) {
                 best_volume = volume;
             }
 
             if (state_actions.find(-volume) == state_actions.end()) {
                 state_actions[-volume] = std::make_pair(item.original_node, item.current);
+            } else {
+                delete item.current;
             }
         } else {
-            // Todavía tiene acciones: limpiar memoria y conservar para el siguiente paso
             for (auto a : next_actions) delete a;
             remaining_items.push_back(item); 
         }
@@ -64,17 +62,29 @@ void BSM_GM::transition_greedy(std::vector<int> selected_indexes) {
     // Al final, batch_items se actualiza con los que no fueron hojas
     batch_items = std::move(remaining_items);
 
+    // 3. Si todos son hojas, generar siguiente nivel
     if (batch_items.empty()) {
         std::list<State*> next_states = get_next_states(state_actions);
+        for (State *s : current_nodes) delete s;
+        current_nodes.clear();
+
         for (State *s : next_states)
         {
             clpState* s_copy = dynamic_cast<clpState *>(s);
             std::list<Action *> actions;
             s_copy->get_actions(actions);
 
-            if (actions.size() > 0) {
+            if (actions.size() > 0 && get_elapsed_time() <= timelimit) {
                 current_nodes.push_back(dynamic_cast<clpState *>(s));
+            } else {
+                delete s;
             }
+
+            for (auto a : actions) delete a;
+        }
+
+        if (current_nodes.empty()) {
+            final_time = get_elapsed_time();
         }
     }
 }
@@ -126,6 +136,7 @@ void register_bsm_gm(py::module &m) {
                 py::arg("w"),
                 py::arg("min_fr"))
         .def_readwrite("best_volume", &BSM_GM::best_volume)
+        .def_readwrite("final_time", &BSM_GM::final_time)
         .def_readwrite("w", &BSM_GM::w)
 
         .def("get_block_features", &BSM_GM::get_block_features)

@@ -185,16 +185,22 @@ int main(int argc, char** argv){
 		ss = bsg;
 		eval = ss->run(s_copy);
 	}
+	double time = ss->get_time();
 
     cout << "% volume utilization" << endl;
 	cout << eval*100 << endl;
 
+	cout << "total time" << endl;
+	cout << time << endl;
+
+	ss->get_time();
+
 	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
+	DataPrinter printer(s00, vcs, w);
 
   	if (_verbose || _verbose2) {
 		cout << "BLOCKS" << endl;
-		DataPrinter printer(s00);
-		printer.printBlocks();
+		printer.print_blocks();
 		cout << endl;
 
 		list<const Action*>& actions= dynamic_cast<const clpState*>(ss->get_best_state())->get_path();
@@ -203,21 +209,21 @@ int main(int argc, char** argv){
 
 		for(auto action:actions) {
 			cout << "Actions" << endl;
-			printer.printActions(vcs, w);
+			printer.print_actions();
 
 			cout << "Placed" << endl;
-			printer.printPlaced();
+			printer.print_placed();
 
 			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
 
 			cout << "Space" << endl;
-			printer.printSpace();	
+			printer.print_space();	
 
 			cout << "Selected Block" << endl;
 			cout << clp_action->block.id << endl;
 
 			cout << "Volume" << endl;
-			printer.printVolume();
+			printer.print_volume();
 
 			cout << endl;
 

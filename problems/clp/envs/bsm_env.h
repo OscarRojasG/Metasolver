@@ -42,6 +42,10 @@ public:
     BSM_ENV(std::string filename, int instance_number, int w, double min_fr=0.98, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now()) 
         : BSM_ENV(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w, timelimit, start_time) {}
 
+    virtual ~BSM_ENV() {
+        delete vcs;
+    }
+
     py::array_t<float> get_block_features() {
         return block_features;
     }
@@ -57,15 +61,7 @@ public:
         return d;
     }
 
-    virtual void transition(std::vector<std::vector<int>> selected_indexes_lists) {
-        // Limpiar el batch anterior para evitar leaks o datos sucios
-        batch_items.clear();
-
-        if (get_elapsed_time() > timelimit) {
-            current_nodes.clear();
-            return;
-        }
-        
+    virtual void transition(std::vector<std::vector<int>> selected_indexes_lists) { 
         int i = 0;
         // Iteramos sobre los nodos actuales (current_nodes es std::list)
         for (auto s : current_nodes) {
@@ -98,8 +94,6 @@ public:
             }
             i++;
         }
-
-        current_nodes.clear();
     }
 
     bool is_finished() {
@@ -126,20 +120,13 @@ protected:
             Action* a = (s) ? s->next_action(*final_state) : NULL;
 
             if (nextS.size() < w && a) {
-                State* p=s;
                 s=s->clone();
-                state_action->second.first=s;
                 s->transition(*a);
                 nextS.push_back(s);
-                p->add_children(s);
             }
-            else state_action->second.first=NULL;
 
-            if (k >= w) {
-                delete final_state;
-                state_action=sorted_states.erase(state_action);
-            }
-            else state_action++;
+            delete final_state;
+            state_action=sorted_states.erase(state_action);
 
             if (a) delete a;
             k++;

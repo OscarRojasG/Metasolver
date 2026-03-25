@@ -79,6 +79,7 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 	// Métricas de la acción
 	auto* ca = dynamic_cast<const clpAction*>(&a);
 	ca->metrics.clear();
+	ca->metrics.push_back(eval);
 	ca->metrics.push_back((loss < 0) ? 0.0 : loss);
     ca->metrics.push_back(cs_all);
 

@@ -10,6 +10,11 @@
 
 class EnvUtils {
 public:
+    static const int N_BLOCK_FEATURES = 8;
+    static const int N_ACTION_FEATURES = 2;
+    static const int N_PLACED_FEATURES = 4;
+    static const int N_SPACE_FEATURES = 6;
+
     static void get_blocks_data(clpState* s0, float* out_features, std::map<int, int>& block_id_to_index, std::vector<int>& block_index_to_id) {
         block_id_to_index.clear();
         block_index_to_id.clear();
@@ -40,26 +45,25 @@ public:
         }
     }
 
-    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features) {
+    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, int num_actions, bool add_vcs_eval = false) {
         std::list<Action*> actions;
         state->get_actions(actions);
         
         std::multimap<double, Action*> ranked_actions;
-        size_t limit = (size_t)(w * w);
 
         for (auto a : actions) {
             double eval = vcs->eval_action(*state, *a);
-            if (eval > 0 && (ranked_actions.size() < limit || ranked_actions.begin()->first < eval)) {
+            if (eval > 0 && (ranked_actions.size() < num_actions || ranked_actions.begin()->first < eval)) {
                 ranked_actions.insert({eval, a});
-                if (ranked_actions.size() > limit) {
+                if (ranked_actions.size() > num_actions) {
                     delete ranked_actions.begin()->second;
                     ranked_actions.erase(ranked_actions.begin());
                 }
             } else { delete a; }
         }
 
-        std::fill(out_blocks, out_blocks + limit, -1);
-        std::fill(out_features, out_features + (limit * 2), -1.0f);
+        std::fill(out_blocks, out_blocks + num_actions, -1);
+        std::fill(out_features, out_features + (num_actions * 2), -1.0f);
 
         size_t count = 0;
         for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
@@ -68,9 +72,11 @@ public:
                 out_blocks[count] = block_id_to_index[ca->block.id];
                 
                 auto it_m = ca->metrics.begin();
-                out_features[count * 2]     = (it_m != ca->metrics.end()) ? (float)(*it_m) : -1.0f;
+                out_features[count * (2 + add_vcs_eval)] = (float)(*it_m);
                 it_m++;
-                out_features[count * 2 + 1] = (it_m != ca->metrics.end()) ? (float)(*it_m) : -1.0f;
+                out_features[count * (2 + add_vcs_eval) + add_vcs_eval] = (float)(*it_m);
+                it_m++;
+                out_features[count * (2 + add_vcs_eval) + 1 + add_vcs_eval] = (float)(*it_m);
                 
                 count++;
             }
@@ -157,7 +163,7 @@ public:
             int* current_block_ptr = out_blocks_ptr + (i * limit);
             float* current_feature_ptr = out_features_ptr + (i * limit * 2);
             
-            get_actions_data(states[i], vcs, w, block_id_to_index, current_block_ptr, current_feature_ptr);
+            get_actions_data(states[i], vcs, w, block_id_to_index, current_block_ptr, current_feature_ptr, limit);
         }
     }
 

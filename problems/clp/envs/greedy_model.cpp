@@ -53,6 +53,7 @@ void GreedyModel::transition(int selected_index) {
             current_node->get_actions(child_actions);
             
             if (child_actions.size() == 0) {
+                final_time = get_elapsed_time();
                 completed = true;
             }
             
@@ -83,6 +84,7 @@ void register_greedy_model(py::module &m) {
                 py::arg("w"),
                 py::arg("min_fr"))
         .def_readwrite("volume", &GreedyModel::volume)
+        .def_readwrite("final_time", &GreedyModel::final_time)
         .def_readwrite("w", &GreedyModel::w)
 
         .def("get_block_features", &GreedyModel::get_block_features)

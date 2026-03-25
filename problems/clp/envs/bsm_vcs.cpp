@@ -20,32 +20,44 @@ void BSM_VCS::transition(std::vector<std::vector<int>> selected_indexes_lists) {
 
     std::map<double, std::pair<State *, State *>> state_actions;
     for (auto& item : batch_items) {
-        if (get_elapsed_time() > timelimit) return;
-
         std::list<Action*> next_actions;
         double volume = gr->run(*item.current);
             
         // Actualizar el mejor volumen global
-        if (volume > best_volume) {
+        if (volume > best_volume && get_elapsed_time() <= timelimit) {
             best_volume = volume;
         }
 
         if (state_actions.find(-volume) == state_actions.end()) {
             state_actions[-volume] = std::make_pair(item.original_node, item.current);
+        } else {
+            delete item.current;
         }
     }
 
     std::list<State*> next_states = get_next_states(state_actions);
+    for (State *s : current_nodes) delete s;
+    current_nodes.clear();
+
     for (State *s : next_states)
     {
         clpState* s_copy = dynamic_cast<clpState *>(s);
         std::list<Action *> actions;
         s_copy->get_actions(actions);
 
-        if (actions.size() > 0) {
+        if (actions.size() > 0 && get_elapsed_time() <= timelimit) {
             current_nodes.push_back(dynamic_cast<clpState *>(s));
+        } else {
+            delete s;
         }
+
+        for (auto a : actions) delete a;
     }
+
+    if (current_nodes.empty()) {
+        final_time = get_elapsed_time();
+    }
+    batch_items.clear();
 }
 
 void register_bsm_vcs(py::module &m) {
@@ -56,6 +68,7 @@ void register_bsm_vcs(py::module &m) {
                 py::arg("w"),
                 py::arg("min_fr"))
         .def_readwrite("best_volume", &BSM_VCS::best_volume)
+        .def_readwrite("final_time", &BSM_VCS::final_time)
         .def_readwrite("w", &BSM_VCS::w)
 
         .def("get_block_features", &BSM_VCS::get_block_features)

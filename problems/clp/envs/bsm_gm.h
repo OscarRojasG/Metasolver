@@ -21,7 +21,7 @@ public:
     BSM_GM(std::string filename, int instance_number, int w, double min_fr=1);
 
     BSM_GM(clpState* s0, int w, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now());
-
+    
     void transition_bsm(std::vector<std::vector<int>> selected_indexes_lists);
 
     void transition_greedy(std::vector<int> selected_indexes);

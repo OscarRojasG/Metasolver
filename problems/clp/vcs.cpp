@@ -107,7 +107,11 @@ int main(int argc, char** argv) {
 	cout << "running" << endl;
 
 	double eval = gr->run(s_copy);
+	double time = gr->get_time();
 
     cout << "% volume utilization" << endl;
 	cout << eval*100 << endl;
+
+	cout << "total time" << endl;
+	cout << time << endl;
 }

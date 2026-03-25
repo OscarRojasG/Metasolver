@@ -1,187 +1,120 @@
-#pragma once
-#include <iostream>
 #include <list>
-#include <vector>
-#include <algorithm>
 #include "VCS_Function.h"
-#include "BlockMetrics.h"
+#include "envs/env_utils.h"
 #include "clpState.h"
-#include <cstdint>
 
 using namespace std;
 using namespace metasolver;
 
 class DataPrinter {
 private:
-    clpState* state;  // solo referencia, no copia
+    clpState* state;
+    map<int, int> block_id_to_index;
+    vector<int> block_index_to_id;
+
+    VCS_Function *vcs;
+    int w;
+
+    int num_blocks;
+    int num_actions;
+    int num_placed;
+
+    vector<float> block_features;
+    vector<int> action_blocks;
+    vector<float> action_features;
+    vector<int> placed_blocks;
+    vector<float> placed_features;
+    vector<float> space_features;
+
+    void get_blocks() {
+        num_blocks = static_cast<int>(state->valid_blocks.size());
+        
+        block_features.assign(num_blocks * EnvUtils::N_BLOCK_FEATURES, 0.0f);
+        
+        EnvUtils::get_blocks_data(state, block_features.data(), block_id_to_index, block_index_to_id);
+    }
+    
+    void get_actions() {
+        list<Action *> actions;
+        state->get_actions(actions);
+        num_actions = min(w * w, static_cast<int>(actions.size()));
+
+        for (auto a : actions) delete a;
+
+        action_blocks.assign(num_actions, 0);
+        action_features.assign(num_actions * (EnvUtils::N_ACTION_FEATURES + 1), 0.0f);
+
+        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, action_blocks.data(), action_features.data(), num_actions, true);
+    }
+
+    void get_placed_data() {
+        num_placed = static_cast<int>(state->get_path().size());
+
+        placed_blocks.assign(num_placed, 0);
+        placed_features.assign(num_placed * EnvUtils::N_PLACED_FEATURES, 0.0f);
+
+        EnvUtils::get_placed_data(state, block_id_to_index, placed_blocks.data(), placed_features.data(), num_placed);
+    }
+
+    void get_space_features() {
+        space_features.assign(EnvUtils::N_SPACE_FEATURES, 0.0f);
+        
+        EnvUtils::get_space_features(state, space_features.data());
+    }
 
 public:
-    explicit DataPrinter(clpState* s)
-        : state(s) {}
+    DataPrinter(clpState* s, VCS_Function* vcs, int w) {
+        state = s;
+        this->vcs = vcs;
+        this->w = w;
 
-    // ======================================================
-    //  imprimir acciones con sus métricas
-    // ======================================================
-    void printActions(VCS_Function* vcs, int w) {
-        list<Action*> actions;
-        state->get_actions(actions);
-
-        multimap<double, Action*> ranked_actions;
-
-        for (auto a : actions) {
-            double eval = vcs->eval_action(*state, *a);
-            if (eval > 0 && (ranked_actions.size() < w*w || ranked_actions.begin()->first < eval)) {
-                ranked_actions.insert(make_pair(eval, a));
-                if (ranked_actions.size() == w*w + 1) {
-                    ranked_actions.erase(ranked_actions.begin());
-                }
-            } else {
-                delete a;
-            }
-        }
-
-        vector<pair<double, Action*>> scored(ranked_actions.begin(), ranked_actions.end());
-        reverse(scored.begin(), scored.end()); // de mejor a peor
-
-        // Primero, contamos cuántas acciones válidas tenemos realmente
-        uint32_t num_to_print = 0;
-        for (auto& p : scored) {
-            if (num_to_print >= (uint32_t)(w * w)) break;
-            if (dynamic_cast<clp::clpAction*>(p.second)) num_to_print++;
-        }
-
-        // 1. Enviar cabecera: número de acciones
-        std::fwrite(&num_to_print, sizeof(uint32_t), 1, stdout);
-
-        for (auto& p : scored) {
-            if (num_to_print == 0) break; // Seguridad
-            clp::clpAction* ca = dynamic_cast<clp::clpAction*>(p.second);
-            if (!ca) continue;
-
-            // Suponiendo que ca->metrics tiene un tamaño fijo (por ejemplo, 8)
-            // Ajusta el tamaño del array según tus métricas reales
-            size_t n_metrics = ca->metrics.size();
-            float data[n_metrics + 1]; 
-            
-            data[0] = static_cast<float>(ca->block.id);
-            size_t i = 0;
-            for (auto m : ca->metrics) {
-                data[i+1] = static_cast<float>(m);
-                ++i;
-            }
-
-            // 2. Enviar ID + métricas
-            std::fwrite(data, sizeof(float), n_metrics + 1, stdout);
-            
-            if (--num_to_print == 0) break;
-        }
-        std::fflush(stdout);
+        get_blocks();
     }
 
-    // ======================================================
-    //  imprimir métricas de cada bloque válido
-    // ======================================================
-    void printBlocks() {
-        uint32_t num_blocks = static_cast<uint32_t>(state->valid_blocks.size());
-        
-        // 1. Enviar el total de bloques primero (Header)
-        std::fwrite(&num_blocks, sizeof(uint32_t), 1, stdout);
-
-        for (const Block* block : state->valid_blocks) {
-            BlockMetrics bm(*block, *(state->cont));
-            
-            // Creamos un array temporal con los datos del bloque (8 floats + 1 int)
-            // OJO: Asegúrate de que los tipos coincidan con lo que esperas en Python
-            float data[9]; 
-            data[0] = static_cast<float>(block->id);
-            data[1] = bm.getNormL();
-            data[2] = bm.getNormH();
-            data[3] = bm.getNormW();
-            data[4] = bm.getNormOccupiedVolumeCont();
-            data[5] = bm.getBoxesAmountReciprocal();
-            data[6] = bm.getNormL() * bm.getNormW();
-            data[7] = bm.getNormW() * bm.getNormH();
-            data[8] = bm.getNormH() * bm.getNormL();
-
-            // 2. Enviar el bloque completo de una sola vez
-            std::fwrite(data, sizeof(float), 9, stdout);
-        }
-        // 3. Flush manual al final de TODOS los bloques, no por cada uno
-        std::fflush(stdout);
-    }
-
-    // ======================================================
-    //  imprimir coordenadas relativas de bloques colocados
-    // ======================================================
-    void printPlaced() {
-        clp::Space space = state->cont->spaces->top();
-        const bool* anchors = space.get_anchor();
-        const Vector3 corner = space.get_corner();
-
-        long sx = anchors[0] ? corner.getX() * -1 + state->cont->getL(): corner.getX();
-        long sy = anchors[1] ? corner.getY() * -1 + state->cont->getW(): corner.getY();
-        long sz = anchors[2] ? corner.getZ() * -1 + state->cont->getH(): corner.getZ();
-
-        list<const Action*> actions = state->get_path();
-        uint32_t num_placed = static_cast<uint32_t>(actions.size());
-
-        // 1. Enviar cuántos bloques hay colocados
-        std::fwrite(&num_placed, sizeof(uint32_t), 1, stdout);
-
-        for (const Action* a : actions) {
-            const clp::clpAction* action = static_cast<const clp::clpAction*>(a);
-            const Space& sb = action->space;
-            const Block& block = action->block;
-            Vector3 coords = sb.get_location(block);
-
-            double bx = anchors[0] ? (coords.getX() + block.getL()) * -1 + state->cont->getL(): coords.getX();
-            double by = anchors[1] ? (coords.getY() + block.getW()) * -1 + state->cont->getW(): coords.getY();
-            double bz = anchors[2] ? (coords.getZ() + block.getH()) * -1 + state->cont->getH(): coords.getZ();
-
-            float contact = 1;
-            if ((bx + block.getL() < sx) || (bx > sx + space.getL()) ||
-                (by + block.getW() < sy) || (by > sy + space.getW()) ||
-                (bz + block.getH() < sz) || (bz > sz + space.getH())) {
-                    contact = 0;
+    void print_blocks() {
+        for (int i = 0; i < num_blocks; i++) {
+            cout << block_index_to_id[i] << " ";
+            for (int j = 0; j < EnvUtils::N_BLOCK_FEATURES; j++) {
+                cout << block_features[i * EnvUtils::N_BLOCK_FEATURES + j] << " ";
             }
-
-            bx /= state->cont->getL();
-            by /= state->cont->getW();
-            bz /= state->cont->getH();
-
-            float data[5];
-            data[0] = static_cast<float>(block.id);
-            data[1] = static_cast<float>(bx / state->cont->getL());
-            data[2] = static_cast<float>(by / state->cont->getW());
-            data[3] = static_cast<float>(bz / state->cont->getH());
-            data[4] = static_cast<float>(contact);
-
-            // 2. Enviar el bloque de datos
-            std::fwrite(data, sizeof(float), 5, stdout);
+            cout << endl;
         }
-        std::fflush(stdout);
     }
 
-    void printVolume() {
+    void print_actions() {
+        get_actions();
+
+        for (int i = 0; i < num_actions; i++) {
+            cout << action_blocks[i] << " ";
+            for (int j = 0; j < EnvUtils::N_ACTION_FEATURES + 1; j++) {
+                cout << action_features[i * (EnvUtils::N_ACTION_FEATURES + 1) + j] << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    void print_placed() {
+        get_placed_data();
+
+        for (int i = 0; i < num_placed; i++) {
+            cout << placed_blocks[i] << " ";
+            for (int j = 0; j < EnvUtils::N_PLACED_FEATURES; j++) {
+                cout << placed_features[i * EnvUtils::N_PLACED_FEATURES + j] << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    void print_space() {
+        get_space_features();
+
+        for (int i = 0; i < EnvUtils::N_SPACE_FEATURES; i++) {
+            cout << space_features[i] << " ";
+        }
+        cout << endl;
+    }
+
+    void print_volume() {
         cout << state->cont->getOccupiedVolume() / state->cont->getVolume() << endl;
-    }
-
-    void printSpace() {
-        Space space = state->cont->spaces->top();
-        const bool* anchors = space.get_anchor();
-        const Vector3 corner = space.get_corner();
-
-        // Calculamos los valores
-        float features[6];
-        features[0] = static_cast<float>(anchors[0] ? corner.getX() * -1 + state->cont->getL() : corner.getX()) / state->cont->getL();
-        features[1] = static_cast<float>(anchors[1] ? corner.getY() * -1 + state->cont->getW() : corner.getY()) / state->cont->getW();
-        features[2] = static_cast<float>(anchors[2] ? corner.getZ() * -1 + state->cont->getH() : corner.getZ()) / state->cont->getH();
-        features[3] = static_cast<float>(space.getL()) / state->cont->getL();
-        features[4] = static_cast<float>(space.getW()) / state->cont->getW();
-        features[5] = static_cast<float>(space.getH()) / state->cont->getH();
-
-        // Escribimos los 6 floats de un solo golpe
-        std::fwrite(features, sizeof(float), 6, stdout);
-        std::fflush(stdout);
     }
 };

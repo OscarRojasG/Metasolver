@@ -42,9 +42,9 @@ private:
         for (auto a : actions) delete a;
 
         action_blocks.assign(num_actions, 0);
-        action_features.assign(num_actions * (EnvUtils::N_ACTION_FEATURES + 1), 0.0f);
+        action_features.assign(num_actions * EnvUtils::N_ACTION_FEATURES, 0.0f);
 
-        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, action_blocks.data(), action_features.data(), num_actions, true);
+        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, action_blocks.data(), action_features.data(), num_actions);
     }
 
     void get_placed_data() {
@@ -73,7 +73,6 @@ public:
 
     void print_blocks() {
         for (int i = 0; i < num_blocks; i++) {
-            cout << block_index_to_id[i] << " ";
             for (int j = 0; j < EnvUtils::N_BLOCK_FEATURES; j++) {
                 cout << block_features[i * EnvUtils::N_BLOCK_FEATURES + j] << " ";
             }
@@ -86,8 +85,8 @@ public:
 
         for (int i = 0; i < num_actions; i++) {
             cout << action_blocks[i] << " ";
-            for (int j = 0; j < EnvUtils::N_ACTION_FEATURES + 1; j++) {
-                cout << action_features[i * (EnvUtils::N_ACTION_FEATURES + 1) + j] << " ";
+            for (int j = 0; j < EnvUtils::N_ACTION_FEATURES; j++) {
+                cout << action_features[i * (EnvUtils::N_ACTION_FEATURES) + j] << " ";
             }
             cout << endl;
         }
@@ -116,5 +115,9 @@ public:
 
     void print_volume() {
         cout << state->cont->getOccupiedVolume() / state->cont->getVolume() << endl;
+    }
+
+    void print_block_index(int id) {
+        cout << block_id_to_index[id] << endl;
     }
 };

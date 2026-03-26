@@ -45,7 +45,7 @@ public:
         }
     }
 
-    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, int num_actions, bool add_vcs_eval = false) {
+    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, int num_actions) {
         std::list<Action*> actions;
         state->get_actions(actions);
         
@@ -72,11 +72,9 @@ public:
                 out_blocks[count] = block_id_to_index[ca->block.id];
                 
                 auto it_m = ca->metrics.begin();
-                out_features[count * (2 + add_vcs_eval)] = (float)(*it_m);
+                out_features[count * 2] = (float)(*it_m);
                 it_m++;
-                out_features[count * (2 + add_vcs_eval) + add_vcs_eval] = (float)(*it_m);
-                it_m++;
-                out_features[count * (2 + add_vcs_eval) + 1 + add_vcs_eval] = (float)(*it_m);
+                out_features[count * 2 + 1] = (float)(*it_m);
                 
                 count++;
             }

@@ -220,7 +220,7 @@ int main(int argc, char** argv){
 			printer.print_space();	
 
 			cout << "Selected Block" << endl;
-			cout << clp_action->block.id << endl;
+			printer.print_block_index(clp_action->block.id);
 
 			cout << "Volume" << endl;
 			printer.print_volume();

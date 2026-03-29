@@ -208,13 +208,13 @@ int main(int argc, char** argv){
 		cout << "SOLVE STEPS" << endl;
 
 		for(auto action:actions) {
+			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
+
 			cout << "Actions" << endl;
-			printer.print_actions();
+			printer.print_actions(true, true);
 
 			cout << "Placed" << endl;
 			printer.print_placed();
-
-			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
 
 			cout << "Space" << endl;
 			printer.print_space();	

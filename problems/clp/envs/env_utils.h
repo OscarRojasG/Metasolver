@@ -45,10 +45,10 @@ public:
         }
     }
 
-    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, int num_actions) {
+    static std::multimap<double, Action*> get_ranked_actions(clpState* state, VCS_Function* vcs, int num_actions) {
         std::list<Action*> actions;
         state->get_actions(actions);
-        
+
         std::multimap<double, Action*> ranked_actions;
 
         for (auto a : actions) {
@@ -62,6 +62,12 @@ public:
             } else { delete a; }
         }
 
+        return ranked_actions;
+    }
+
+    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, int num_actions) {      
+        std::multimap<double, Action*> ranked_actions = get_ranked_actions(state, vcs, num_actions);
+
         std::fill(out_blocks, out_blocks + num_actions, -1);
         std::fill(out_features, out_features + (num_actions * 2), -1.0f);
 
@@ -72,6 +78,7 @@ public:
                 out_blocks[count] = block_id_to_index[ca->block.id];
                 
                 auto it_m = ca->metrics.begin();
+                it_m++;
                 out_features[count * 2] = (float)(*it_m);
                 it_m++;
                 out_features[count * 2 + 1] = (float)(*it_m);

@@ -80,7 +80,61 @@ public:
         }
     }
 
-    void print_actions() {
+    void print_actions(bool add_vcs = false, bool add_greedy = false) {
+        get_actions();
+
+        std::multimap<double, Action*> ranked_actions;
+        double greedy_values[num_actions];
+        double vcs_values[num_actions];
+
+        if (add_greedy || add_vcs) {
+            ranked_actions = EnvUtils::get_ranked_actions(state, vcs, num_actions);
+
+            if (add_greedy) {
+                SearchStrategy *gr = new Greedy(vcs);
+
+                int i = 0;
+                for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
+                    clpState* s_copy = dynamic_cast<clpState*> (state->clone());
+                    s_copy->transition(*it->second);
+                    double value = gr->run(*s_copy);
+                    greedy_values[i] = value;
+                    i++;
+                    delete s_copy;
+                }
+            }
+
+            if (add_vcs) {
+                int i = 0;
+                for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
+                    vcs_values[i] = it->first;
+                    i++;
+                }
+            }
+
+            for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
+                delete it->second;
+            }
+        }
+
+        for (int i = 0; i < num_actions; i++) {
+            cout << action_blocks[i] << " ";
+
+            if (add_greedy) {
+                cout << greedy_values[i] << " ";
+            }
+            if (add_vcs) {
+                cout << vcs_values[i] << " ";
+            }
+
+            for (int j = 0; j < EnvUtils::N_ACTION_FEATURES; j++) {
+                cout << action_features[i * (EnvUtils::N_ACTION_FEATURES) + j] << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    void print_actions(SearchStrategy *gr) {
         get_actions();
 
         for (int i = 0; i < num_actions; i++) {

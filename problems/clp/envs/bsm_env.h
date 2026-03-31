@@ -1,4 +1,3 @@
-
 #ifndef BSM_ENV_H
 #define BSM_ENV_H
 
@@ -58,6 +57,7 @@ public:
         d["pl_blocks"] = placed_blocks;
         d["pl_feats"] = placed_features;
         d["sp_feats"] = space_features;
+        d["biases"] = biases;
         return d;
     }
 
@@ -142,6 +142,7 @@ private:
     py::array_t<int32_t> placed_blocks;
     py::array_t<float> placed_features;
     py::array_t<float> space_features;
+    py::array_t<float> biases;
 
     // Helper para extraer los punteros de current_nodes (std::list)
     std::vector<clpState*> get_current_nodes_vec() {
@@ -151,7 +152,7 @@ private:
     void update_batches() {
         std::vector<clp::clpState*> nodes = get_current_nodes_vec();
 
-        EnvUtilsPython::get_actions_data_batch(nodes, vcs, w, block_id_to_index, action_blocks, action_features);
+        EnvUtilsPython::get_actions_data_batch(nodes, vcs, w, block_id_to_index, action_blocks, action_features, biases);
         EnvUtilsPython::get_placed_data_batch(nodes, block_id_to_index, placed_blocks, placed_features);
         EnvUtilsPython::get_space_features_batch(nodes, space_features);
     }

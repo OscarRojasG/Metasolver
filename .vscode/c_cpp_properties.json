@@ -5,11 +5,11 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/problems/clp/objects2",
-                "/usr/include/python3.13",
+                "/usr/include/python3.12",
                 "${workspaceFolder}/problems/clp"
             ],
             "defines": [],
-            "compilerPath": "/usr/sbin/gcc",
+            "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64"

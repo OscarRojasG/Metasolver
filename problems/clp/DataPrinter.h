@@ -25,6 +25,7 @@ private:
     vector<int> placed_blocks;
     vector<float> placed_features;
     vector<float> space_features;
+    vector<float> vcs_evals;
 
     void get_blocks() {
         num_blocks = static_cast<int>(state->valid_blocks.size());
@@ -43,8 +44,9 @@ private:
 
         action_blocks.assign(num_actions, 0);
         action_features.assign(num_actions * EnvUtils::N_ACTION_FEATURES, 0.0f);
+        vcs_evals.assign(num_actions, 0);
 
-        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, action_blocks.data(), action_features.data(), num_actions);
+        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, action_blocks.data(), action_features.data(), vcs_evals.data(), num_actions);
     }
 
     void get_placed_data() {
@@ -85,9 +87,8 @@ public:
 
         std::multimap<double, Action*> ranked_actions;
         double greedy_values[num_actions];
-        double vcs_values[num_actions];
 
-        if (add_greedy || add_vcs) {
+        if (add_greedy) {
             ranked_actions = EnvUtils::get_ranked_actions(state, vcs, num_actions);
 
             if (add_greedy) {
@@ -104,14 +105,6 @@ public:
                 }
             }
 
-            if (add_vcs) {
-                int i = 0;
-                for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
-                    vcs_values[i] = it->first;
-                    i++;
-                }
-            }
-
             for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
                 delete it->second;
             }
@@ -124,7 +117,7 @@ public:
                 cout << greedy_values[i] << " ";
             }
             if (add_vcs) {
-                cout << vcs_values[i] << " ";
+                cout << vcs_evals[i] << " ";
             }
 
             for (int j = 0; j < EnvUtils::N_ACTION_FEATURES; j++) {

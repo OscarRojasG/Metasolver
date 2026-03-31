@@ -101,6 +101,7 @@ py::dict BSM_GM::get_batch_dict_greedy() {
     d["pl_blocks"] = placed_blocks_gr;
     d["pl_feats"] = placed_features_gr;
     d["sp_feats"] = space_features_gr;
+    d["biases"] = space_features_gr;
     return d;
 }
 
@@ -123,7 +124,7 @@ std::vector<clpState*> BSM_GM::get_greedy_nodes_vec() {
 void BSM_GM::update_batches_greedy() {
     std::vector<clp::clpState*> nodes = get_greedy_nodes_vec();
 
-    EnvUtilsPython::get_actions_data_batch(nodes, vcs, w, block_id_to_index, action_blocks_gr, action_features_gr);
+    EnvUtilsPython::get_actions_data_batch(nodes, vcs, w, block_id_to_index, action_blocks_gr, action_features_gr, biases_gr);
     EnvUtilsPython::get_placed_data_batch(nodes, block_id_to_index, placed_blocks_gr, placed_features_gr);
     EnvUtilsPython::get_space_features_batch(nodes, space_features_gr);
 }

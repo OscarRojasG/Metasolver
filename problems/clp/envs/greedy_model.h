@@ -46,6 +46,7 @@ private:
     py::array_t<int32_t> placed_blocks;
     py::array_t<float> placed_features;
     py::array_t<float> space_features;
+    py::array_t<float> biases;
 
     bool completed = false;
 

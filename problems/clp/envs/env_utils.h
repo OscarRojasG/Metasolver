@@ -65,11 +65,12 @@ public:
         return ranked_actions;
     }
 
-    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, int num_actions) {      
+    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, float* out_vcs_evals, int num_actions) {      
         std::multimap<double, Action*> ranked_actions = get_ranked_actions(state, vcs, num_actions);
 
         std::fill(out_blocks, out_blocks + num_actions, -1);
         std::fill(out_features, out_features + (num_actions * 2), -1.0f);
+        std::fill(out_vcs_evals, out_vcs_evals + num_actions, -1.0f);
 
         size_t count = 0;
         for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
@@ -78,6 +79,7 @@ public:
                 out_blocks[count] = block_id_to_index[ca->block.id];
                 
                 auto it_m = ca->metrics.begin();
+                out_vcs_evals[count] = (float)(*it_m);
                 it_m++;
                 out_features[count * 2] = (float)(*it_m);
                 it_m++;
@@ -160,15 +162,16 @@ public:
         return state->cont->getOccupiedVolume() / state->cont->getVolume();
     }
 
-    static void get_actions_data_batch(const std::vector<clp::clpState*>& states, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks_ptr, float* out_features_ptr) {
+    static void get_actions_data_batch(const std::vector<clp::clpState*>& states, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks_ptr, float* out_features_ptr, float* out_vcs_evals_ptr) {
         size_t num_states = states.size();
         size_t limit = (size_t)(w * w);
 
         for (size_t i = 0; i < num_states; ++i) {
             int* current_block_ptr = out_blocks_ptr + (i * limit);
             float* current_feature_ptr = out_features_ptr + (i * limit * 2);
+            float* current_bias_ptr = out_vcs_evals_ptr + (i * limit);
             
-            get_actions_data(states[i], vcs, w, block_id_to_index, current_block_ptr, current_feature_ptr, limit);
+            get_actions_data(states[i], vcs, w, block_id_to_index, current_block_ptr, current_feature_ptr, current_bias_ptr, limit);
         }
     }
 

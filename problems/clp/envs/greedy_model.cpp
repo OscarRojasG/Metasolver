@@ -31,6 +31,7 @@ py::dict GreedyModel::get_dict() {
     d["pl_blocks"] = placed_blocks;
     d["pl_feats"] = placed_features;
     d["sp_feats"] = space_features;
+    d["biases"] = biases;
     return d;
 }
 
@@ -71,7 +72,7 @@ bool GreedyModel::is_finished() {
 }
 
 void GreedyModel::update() {
-    EnvUtilsPython::get_actions_data(current_node, vcs, w, block_id_to_index, action_blocks, action_features);
+    EnvUtilsPython::get_actions_data(current_node, vcs, w, block_id_to_index, action_blocks, action_features, biases);
     EnvUtilsPython::get_placed_data(current_node, block_id_to_index, placed_blocks, placed_features);
     EnvUtilsPython::get_space_features(current_node, space_features);
 }

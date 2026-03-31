@@ -42,6 +42,7 @@ private:
     py::array_t<int32_t> placed_blocks_gr;
     py::array_t<float> placed_features_gr;
     py::array_t<float> space_features_gr;
+    py::array_t<float> biases_gr;
 
     std::vector<clpState*> get_greedy_nodes_vec();
 

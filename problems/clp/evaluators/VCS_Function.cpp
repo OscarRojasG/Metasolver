@@ -58,7 +58,7 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 	double loss=(beta>0.0)?
 			Loss(dynamic_cast<const clpState*>(&s)->nb_left_boxes, b, sp) : 0.0;
 
-	double vol=(delta>0.0)? (double) b.getOccupiedVolume(): 1.0;
+	double vol=(delta>0.0)? (double) b.getOccupiedVolume() / ss->cont->getVolume(): 1.0;
 
 	double cs_all=(alpha>0.0)? CS_p(s, b, sp, p) : 1.0;
 

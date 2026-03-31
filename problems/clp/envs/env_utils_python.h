@@ -17,17 +17,19 @@ public:
         EnvUtils::get_blocks_data(s0, block_features.mutable_data(), block_id_to_index, block_index_to_id);
     }
 
-    static void get_actions_data_batch(const std::vector<clp::clpState*>& states, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, py::array_t<int32_t>& action_blocks_batch, py::array_t<float>& action_features_batch) {
+    static void get_actions_data_batch(const std::vector<clp::clpState*>& states, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, py::array_t<int32_t>& action_blocks_batch, py::array_t<float>& action_features_batch, py::array_t<float>& biases_batch) {
         size_t n = states.size();
         size_t limit = (size_t)(w * w);
 
         action_blocks_batch = py::array_t<int32_t>({ (long)n, (long)limit });
         action_features_batch = py::array_t<float>({ (long)n, (long)limit, 2L });
+        biases_batch = py::array_t<float>({ (long)n, (long)limit });
 
         int32_t* p_blocks = action_blocks_batch.mutable_data();
         float* p_features = action_features_batch.mutable_data();
+        float* p_biases = biases_batch.mutable_data();
 
-        EnvUtils::get_actions_data_batch(states, vcs, w, block_id_to_index, p_blocks, p_features);
+        EnvUtils::get_actions_data_batch(states, vcs, w, block_id_to_index, p_blocks, p_features, p_biases);
     }
 
     static void get_placed_data_batch(const std::vector<clp::clpState*>& states, map<int, int>& block_id_to_index, py::array_t<int32_t>& placed_blocks_batch, py::array_t<float>& placed_features_batch) {
@@ -49,16 +51,18 @@ public:
         EnvUtils::get_space_features_batch(states, space_features_batch.mutable_data());
     }
 
-    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, py::array_t<int32_t>& action_blocks, py::array_t<float>& action_features) {
+    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, py::array_t<int32_t>& action_blocks, py::array_t<float>& action_features, py::array_t<float>& bias) {
         size_t limit = (size_t)(w * w);
 
         action_blocks = py::array_t<int32_t>({ (long)limit });
         action_features = py::array_t<float>({ (long)limit, 2L });
+        bias = py::array_t<float>({ (long)limit });
 
         int32_t* p_blocks = action_blocks.mutable_data();
         float* p_features = action_features.mutable_data();
+        float* p_bias = bias.mutable_data();
 
-        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, p_blocks, p_features, limit);
+        EnvUtils::get_actions_data(state, vcs, w, block_id_to_index, p_blocks, p_features, p_bias, limit);
     }
 
     static void get_placed_data(clpState* state, map<int, int>& block_id_to_index, py::array_t<int32_t>& placed_blocks, py::array_t<float>& placed_features) {

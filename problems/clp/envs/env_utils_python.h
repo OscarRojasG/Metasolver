@@ -22,7 +22,7 @@ public:
         size_t limit = (size_t)(w * w);
 
         action_blocks_batch = py::array_t<int32_t>({ (long)n, (long)limit });
-        action_features_batch = py::array_t<float>({ (long)n, (long)limit, 2L });
+        action_features_batch = py::array_t<float>({ (long)n, (long)limit, (long)EnvUtils::N_ACTION_FEATURES });
         biases_batch = py::array_t<float>({ (long)n, (long)limit });
 
         int32_t* p_blocks = action_blocks_batch.mutable_data();
@@ -37,7 +37,7 @@ public:
         size_t padding = 64;
 
         placed_blocks_batch = py::array_t<int32_t>({ (long)n, (long)padding });
-        placed_features_batch = py::array_t<float>({ (long)n, (long)padding, 4L });
+        placed_features_batch = py::array_t<float>({ (long)n, (long)padding, (long)EnvUtils::N_PLACED_FEATURES });
 
         int32_t* p_blocks = placed_blocks_batch.mutable_data();
         float* p_features = placed_features_batch.mutable_data();
@@ -55,7 +55,7 @@ public:
         size_t limit = (size_t)(w * w);
 
         action_blocks = py::array_t<int32_t>({ (long)limit });
-        action_features = py::array_t<float>({ (long)limit, 2L });
+        action_features = py::array_t<float>({ (long)limit, (long)EnvUtils::N_ACTION_FEATURES });
         bias = py::array_t<float>({ (long)limit });
 
         int32_t* p_blocks = action_blocks.mutable_data();
@@ -69,7 +69,7 @@ public:
         size_t padding = 64;
 
         placed_blocks = py::array_t<int32_t>({ (long)padding });
-        placed_features = py::array_t<float>({ (long)padding, 4L });
+        placed_features = py::array_t<float>({ (long)padding, (long)EnvUtils::N_PLACED_FEATURES });
 
         int32_t* p_blocks = placed_blocks.mutable_data();
         float* p_features = placed_features.mutable_data();
@@ -78,7 +78,7 @@ public:
     }
 
     static void get_space_features(clpState* state, py::array_t<float>& space_features) {
-        space_features = py::array_t<float>({ 6L });
+        space_features = py::array_t<float>({ (long)EnvUtils::N_SPACE_FEATURES });
         EnvUtils::get_space_features(state, space_features.mutable_data());
     }
 };

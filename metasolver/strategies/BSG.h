@@ -86,8 +86,8 @@ public:
 	 */
 	virtual bool double_effort() {
 	    int w= ((double)max_level_size/(double)beams) + 0.5;
-		beams = double(beams)*sqrt(2) + 0.5;
-		w=  double(w)*sqrt(2) +0.5;
+		beams = beams > 1 ? double(beams)*sqrt(2) + 0.5 : 2;
+		w = w > 1 ? double(w)*sqrt(2) + 0.5 : 2;
 		max_level_size = w*beams;
 		n_elite = max(1, (int)(p_elite*beams));
 

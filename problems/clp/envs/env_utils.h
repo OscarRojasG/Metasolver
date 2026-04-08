@@ -80,10 +80,11 @@ public:
                 
                 auto it_m = ca->metrics.begin();
                 out_vcs_evals[count] = (float)(*it_m);
-                it_m++;
-                out_features[count * 2] = (float)(*it_m);
-                it_m++;
-                out_features[count * 2 + 1] = (float)(*it_m);
+
+                for (int i = 0; i < N_ACTION_FEATURES; i++) {
+                    it_m++;
+                    out_features[count * N_ACTION_FEATURES + i] = (float)(*it_m);
+                }
                 
                 count++;
             }

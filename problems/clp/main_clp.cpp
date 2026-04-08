@@ -82,6 +82,7 @@ int main(int argc, char** argv){
 	args::Flag _plot(parser, "double", "plot tree", {"plot"});
 	args::Flag fsb(parser, "fsb", "full-support blocks", {"fsb"});
 	args::Flag trace(parser, "trace", "Trace", {"trace"});
+	args::Flag de(parser, "de", "Double Search Effort", {"de"});
 	args::Positional<std::string> _file(parser, "instance-set", "The name of the instance set");
 
 	cout.precision(8);
@@ -167,7 +168,7 @@ int main(int argc, char** argv){
     SearchStrategy *gr = new Greedy (vcs);
 
 	cout << "bsg" << endl;
-    BSG *bsg= new BSG(vcs,*gr, w, 0.0, 0, _plot);
+	BSG *bsg;
 
 	cout << "copying state" << endl;
 	State& s_copy= *s0->clone();
@@ -178,11 +179,17 @@ int main(int argc, char** argv){
 	double eval;
 	// SOLO SI PARÁMETRO T ESTÁ ESTABLECIDO
 	if(_maxtime) {
+		bsg = new BSG(vcs, *gr, 4, 0.0, 0, _plot); // w = 4 por defecto en código original
 		clock_t begin_time = clock();
 		ss = new DoubleEffort(*bsg);
 		eval = ss->run(s_copy, maxtime, begin_time);
 	} else {
-		ss = bsg;
+		if (de) {
+			bsg = new BSG(vcs, *gr, min(w, 4), 0.0, 0, _plot);
+			ss = new DoubleEffort(*bsg, w);
+		} else {
+			ss = new BSG(vcs,*gr, w, 0.0, 0, _plot);
+		}
 		eval = ss->run(s_copy);
 	}
 	double time = ss->get_time();
@@ -211,7 +218,7 @@ int main(int argc, char** argv){
 			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
 
 			cout << "Actions" << endl;
-			printer.print_actions(true, true);
+			printer.print_actions(true);
 
 			cout << "Placed" << endl;
 			printer.print_placed();
@@ -222,12 +229,12 @@ int main(int argc, char** argv){
 			cout << "Selected Block" << endl;
 			printer.print_block_index(clp_action->block.id);
 
+			s00->transition(*action);
+			
 			cout << "Volume" << endl;
 			printer.print_volume();
 
 			cout << endl;
-
-			s00->transition(*action);
 		}
 	}
 }

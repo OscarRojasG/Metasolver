@@ -6,12 +6,17 @@
 template <typename T>
 class DoubleEffort : public ENV {
 public:
-    int w = 1;
+    int w = 4;
+    int max_w = 4;
+
     T* bsm; // T será BSM_GM o BSM_VCS
     double best_volume = 0;
 
-    DoubleEffort(std::string filename, int instance_number, double min_fr, double timelimit) 
-            : ENV(new_state(filename, instance_number, min_fr, 10000, clpState::BR), timelimit) {}
+    DoubleEffort(std::string filename, int instance_number, double min_fr, double timelimit, int max_w=999999) 
+            : ENV(new_state(filename, instance_number, min_fr, 10000, clpState::BR), timelimit) {
+        this->w = min(4, max_w);
+        this->max_w = max_w;
+    }
 
     void update() {
         w = w > 1 ? w * sqrt(2) + 0.5 : 2;
@@ -24,19 +29,23 @@ public:
     }
 
     bool is_finished() {
-        return (get_elapsed_time() > timelimit);
+        bool finished = (w > max_w) || (get_elapsed_time() > timelimit);
+        if (finished) final_time = get_elapsed_time();
+        return finished;    
     }
 };
 
 template <typename T>
 void register_double_effort(py::module &m, const std::string &name) {
     py::class_<DoubleEffort<T>, ENV>(m, name.c_str())
-        .def(py::init<std::string, int, double, double>(), 
+        .def(py::init<std::string, int, double, double, int>(), 
              py::arg("filename"), 
              py::arg("instance_number"), 
              py::arg("min_fr"),
-             py::arg("timelimit"))
+             py::arg("timelimit"),
+             py::arg("max_w"))
         .def_readwrite("best_volume", &DoubleEffort<T>::best_volume)
+        .def_readwrite("final_time", &DoubleEffort<T>::final_time)
         .def_readwrite("w", &DoubleEffort<T>::w)
 
         .def("update", &DoubleEffort<T>::update)

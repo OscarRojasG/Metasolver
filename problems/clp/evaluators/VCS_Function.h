@@ -34,6 +34,7 @@ public:
     }
 
     double cs[6];
+    double weighted_cs;
     static int nn;
     double CS_p(const State& s, const Block& b, const Space& sp, double p);
 

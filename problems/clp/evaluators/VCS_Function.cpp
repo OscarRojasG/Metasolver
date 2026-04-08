@@ -74,7 +74,7 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 				     pow(n,gamma) * pow(density, delta2) * pow(profit, delta3));
 	}
 
-	eval= (pow(vol, delta)  * pow((1.0-loss),beta) * pow(cs_all,alpha) * pow(n,gamma) );
+	eval = (pow(vol, delta)  * pow((1.0-loss),beta) * pow(cs_all,alpha) * pow(n,gamma) );
 
 	// Métricas de la acción
 	auto* ca = dynamic_cast<const clpAction*>(&a);
@@ -87,37 +87,45 @@ double VCS_Function::eval_action(const State& s, const Action &a){
 }
 
 double VCS_Function::CS_p(const State& s, const Block& b, const Space& sp, double p){
-	   long surface=0;
+	long surface=0;
 
-	   Vector3 oo=sp.get_location(b);
+	Vector3 oo=sp.get_location(b);
 
-	   Vector3 diff=Vector3( p*(double) b.getL(),p*(double) b.getW(),p*(double) b.getH() );
-
-
-	   AABB bb(oo, oo + b);
-	   AABB bexp(oo - diff, oo + b + diff );
+	Vector3 diff=Vector3( p*(double) b.getL(),p*(double) b.getW(),p*(double) b.getH() );
 
 
-	   for(int i=0; i<6; i++) cs[i]=0.0;
+	AABB bb(oo, oo + b);
+	AABB bexp(oo - diff, oo + b + diff );
 
-	   std::list<const AABB*> blocks =
-			   dynamic_cast<const clpState*>(&s)->cont->blocks->get_intersected_objects(bexp);
 
-	   std::list<const AABB*>::iterator it;
+	for(int i=0; i<6; i++) cs[i]=0.0;
 
-	   for(it=blocks.begin(); it!=blocks.end(); it++){
-		   surface=surface+_surface_in_contact(bb,**it);
-	   }
+	std::list<const AABB*> blocks =
+			dynamic_cast<const clpState*>(&s)->cont->blocks->get_intersected_objects(bexp);
 
-	   surface=surface+_surface_in_contact(bb, *dynamic_cast<const clpState*>(&s)->cont);
+	std::list<const AABB*>::iterator it;
 
-		cs[0] = std::min(1.0, cs[0] / (bb.getW() * bb.getH())); // -X
-		cs[1] = std::min(1.0, cs[1] / (bb.getW() * bb.getH())); // +X
-		cs[2] = std::min(1.0, cs[2] / (bb.getL() * bb.getH())); // -Y
-		cs[3] = std::min(1.0, cs[3] / (bb.getL() * bb.getH())); // +Y
-		cs[4] = std::min(1.0, cs[4] / (bb.getL() * bb.getW())); // -Z
-		cs[5] = std::min(1.0, cs[5] / (bb.getL() * bb.getW())); // +Z
-	   return (double)surface / (double)(bb.getSurface());
+	for(it=blocks.begin(); it!=blocks.end(); it++){
+		surface=surface+_surface_in_contact(bb,**it);
+	}
+
+	surface=surface+_surface_in_contact(bb, *dynamic_cast<const clpState*>(&s)->cont);
+
+	cs[0] = std::min(1.0, cs[0] / (bb.getW() * bb.getH())); // -X
+	cs[1] = std::min(1.0, cs[1] / (bb.getW() * bb.getH())); // +X
+	cs[2] = std::min(1.0, cs[2] / (bb.getL() * bb.getH())); // -Y
+	cs[3] = std::min(1.0, cs[3] / (bb.getL() * bb.getH())); // +Y
+	cs[4] = std::min(1.0, cs[4] / (bb.getL() * bb.getW())); // -Z
+	cs[5] = std::min(1.0, cs[5] / (bb.getL() * bb.getW())); // +Z
+
+	weighted_cs = (cs[0] * bb.getW() * bb.getH() +
+			cs[1] * bb.getW() * bb.getH() +
+			cs[2] * bb.getL() * bb.getH() +
+			cs[3] * bb.getL() * bb.getH() +
+			cs[4] * bb.getL() * bb.getW() +
+			cs[5] * bb.getL() * bb.getW()) / (bb.getSurface());
+
+	return (double)surface / (double)(bb.getSurface());
 }
 
 

@@ -8,6 +8,7 @@
 #ifndef STRATEGIES_DOUBLEEFFORT_H_
 #define STRATEGIES_DOUBLEEFFORT_H_
 #include "SearchStrategy.h"
+#include "BSG.h"
 #include <iostream>
 #include <list>
 
@@ -17,7 +18,9 @@ namespace metasolver {
 
 class DoubleEffort : public SearchStrategy {
 public:
-	DoubleEffort(SearchStrategy& bsg) : bsg(bsg) {};
+	DoubleEffort(BSG& bsg, int max_w=999999) : bsg(bsg) {
+		this->max_w = max_w;
+	};
 
 	virtual list<State*> next(list<State*>& S){
 		State& s= **S.begin();
@@ -30,9 +33,9 @@ public:
 			cout << "[DoubleEffort] new best_solution_found ("<< get_time() <<"): " << get_best_value() << endl;
 		}
 
-
-		if(!bsg.double_effort()){
-			clean(S);
+		bsg.double_effort();
+		if (bsg.beams > max_w) {
+			S.clear();
 			return S;
 		}
 
@@ -40,7 +43,8 @@ public:
 	}
 
 private:
-	SearchStrategy& bsg;
+	BSG& bsg;
+	int max_w;
 };
 
 } /* namespace clp */

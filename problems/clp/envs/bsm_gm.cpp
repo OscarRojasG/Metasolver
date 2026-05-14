@@ -46,6 +46,7 @@ void BSM_GM::transition_greedy(std::vector<int> selected_indexes) {
             double volume = item.current->get_value();
             
             if (volume > best_volume && get_elapsed_time() <= timelimit) {
+                best_state = dynamic_cast<clpState*> (item.current->clone());
                 best_volume = volume;
             }
 
@@ -81,10 +82,6 @@ void BSM_GM::transition_greedy(std::vector<int> selected_indexes) {
             }
 
             for (auto a : actions) delete a;
-        }
-
-        if (current_nodes.empty()) {
-            final_time = get_elapsed_time();
         }
     }
 }

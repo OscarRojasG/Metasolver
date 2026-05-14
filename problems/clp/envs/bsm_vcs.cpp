@@ -25,6 +25,7 @@ void BSM_VCS::transition(std::vector<std::vector<int>> selected_indexes_lists) {
             
         // Actualizar el mejor volumen global
         if (volume > best_volume && get_elapsed_time() <= timelimit) {
+            best_state = dynamic_cast<clpState*> (item.current->clone());
             best_volume = volume;
         }
 
@@ -54,9 +55,6 @@ void BSM_VCS::transition(std::vector<std::vector<int>> selected_indexes_lists) {
         for (auto a : actions) delete a;
     }
 
-    if (current_nodes.empty()) {
-        final_time = get_elapsed_time();
-    }
     batch_items.clear();
 }
 

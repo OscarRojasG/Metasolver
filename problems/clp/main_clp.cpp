@@ -180,7 +180,7 @@ int main(int argc, char** argv){
 	// SOLO SI PARÁMETRO T ESTÁ ESTABLECIDO
 	if(_maxtime) {
 		bsg = new BSG(vcs, *gr, 4, 0.0, 0, _plot); // w = 4 por defecto en código original
-		clock_t begin_time = clock();
+		std::chrono::steady_clock::time_point begin_time = std::chrono::steady_clock::now();
 		ss = new DoubleEffort(*bsg);
 		eval = ss->run(s_copy, maxtime, begin_time);
 	} else {
@@ -194,13 +194,15 @@ int main(int argc, char** argv){
 	}
 	double time = ss->get_time();
 
+	list<const Action*>& actions= dynamic_cast<const clpState*>(ss->get_best_state())->get_path();
+	cout << "path length" << endl;
+	cout << actions.size() << endl;
+
     cout << "% volume utilization" << endl;
 	cout << eval*100 << endl;
 
 	cout << "total time" << endl;
 	cout << time << endl;
-
-	ss->get_time();
 
 	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
 	DataPrinter printer(s00, vcs, w);
@@ -209,8 +211,6 @@ int main(int argc, char** argv){
 		cout << "BLOCKS" << endl;
 		printer.print_blocks();
 		cout << endl;
-
-		list<const Action*>& actions= dynamic_cast<const clpState*>(ss->get_best_state())->get_path();
 
 		cout << "SOLVE STEPS" << endl;
 

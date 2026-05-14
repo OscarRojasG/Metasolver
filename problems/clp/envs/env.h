@@ -12,12 +12,20 @@ class ENV {
 public:
     double timelimit;
     double final_time = 0;
+
+    double best_volume = 0;
+    clpState* best_state = NULL;
+
     clpState* s0;
 
     ENV(clpState* s0, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now()) {
         this->s0 = s0;
         this->timelimit = timelimit;
         this->start_time = start_time;
+    }
+
+    double get_path_length() {
+        return best_state->get_path().size();
     }
 
 protected:

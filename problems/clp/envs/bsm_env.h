@@ -22,12 +22,10 @@ struct BatchItem {
 class BSM_ENV : public ENV {
 public:
     int w;
-    double best_volume;
 
     BSM_ENV(clpState* s0, int w, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now()) : ENV(s0, timelimit, start_time) {
         current_nodes.push_back(dynamic_cast<clp::clpState*>(s0->clone()));
 
-        best_volume = 0.0;
         this->w = w;
 
         // VCS y parámetros
@@ -97,7 +95,9 @@ public:
     }
 
     bool is_finished() {
-        return current_nodes.empty();
+        bool finished = current_nodes.empty();
+        if (finished) final_time = get_elapsed_time();
+        return finished;
     }
 
 protected:

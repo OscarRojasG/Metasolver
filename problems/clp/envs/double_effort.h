@@ -10,7 +10,6 @@ public:
     int max_w = 4;
 
     T* bsm; // T será BSM_GM o BSM_VCS
-    double best_volume = 0;
 
     DoubleEffort(std::string filename, int instance_number, double min_fr, double timelimit, int max_w=999999) 
             : ENV(new_state(filename, instance_number, min_fr, 10000, clpState::BR), timelimit) {
@@ -20,7 +19,10 @@ public:
 
     void update() {
         w = w > 1 ? w * sqrt(2) + 0.5 : 2;
-        best_volume = max(best_volume, bsm->best_volume);
+        if (bsm->best_volume > best_volume) {
+            best_volume = bsm->best_volume;
+            best_state = bsm->best_state;
+        }
     }
 
     T* get_env() {
@@ -50,7 +52,8 @@ void register_double_effort(py::module &m, const std::string &name) {
 
         .def("update", &DoubleEffort<T>::update)
         .def("get_env", &DoubleEffort<T>::get_env)
-        .def("is_finished", &DoubleEffort<T>::is_finished);
+        .def("is_finished", &DoubleEffort<T>::is_finished)
+        .def("get_path_length", &DoubleEffort<T>::get_path_length);
 }
 
 #endif

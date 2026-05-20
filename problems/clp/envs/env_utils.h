@@ -1,58 +1,50 @@
-#ifndef ENV_UTILS_H
-#define ENV_UTILS_H
+#ifndef ENV_UTILS2_H
+#define ENV_UTILS2_H
 
 #include <vector>
 #include <list>
 #include <map>
 #include "clpState.h"
 #include "VCS_Function.h"
-#include "BlockMetrics.h"
+#include "Greedy.h"
 
 class EnvUtils {
 public:
-    static const int N_BLOCK_FEATURES = 8;
-    static const int N_ACTION_FEATURES = 2;
+    static const int N_BLOCK_FEATURES = 4;
+    static const int N_ACTION_FEATURES = 4;
     static const int N_PLACED_FEATURES = 4;
     static const int N_SPACE_FEATURES = 6;
 
-    static void get_blocks_data(clpState* s0, float* out_features, std::map<int, int>& block_id_to_index, std::vector<int>& block_index_to_id) {
+    static void get_blocks_data(clpState* s0, std::vector<float>& out_features, std::map<int, int>& block_id_to_index, std::vector<int>& block_index_to_id) {
+        out_features.clear();
         block_id_to_index.clear();
         block_index_to_id.clear();
 
-        size_t num_blocks = s0->valid_blocks.size();
-        
-        block_index_to_id.reserve(num_blocks);
+        out_features.reserve(s0->valid_blocks.size() * N_BLOCK_FEATURES);
 
-        size_t count = 0;
-        for (const Block* block : s0->valid_blocks) {
-            BlockMetrics bm(*block, *(s0->cont));
-            
-            size_t idx = count * 8;
-            
-            out_features[idx]     = (float)bm.getNormL();
-            out_features[idx + 1] = (float)bm.getNormH();
-            out_features[idx + 2] = (float)bm.getNormW();
-            out_features[idx + 3] = (float)bm.getNormOccupiedVolumeCont();
-            out_features[idx + 4] = (float)bm.getBoxesAmountReciprocal();
-            out_features[idx + 5] = (float)bm.getNormL() * (float)bm.getNormW();
-            out_features[idx + 6] = (float)bm.getNormW() * (float)bm.getNormH();
-            out_features[idx + 7] = (float)bm.getNormH() * (float)bm.getNormL();
+        int count = 0;
+        for (const Block* block : s0->valid_blocks) {          
+            // Insertamos consecutivamente las 4 características dinámicamente
+            out_features.push_back((float)block->getL() / (float)s0->cont->getL());
+            out_features.push_back((float)block->getW() / (float)s0->cont->getW());
+            out_features.push_back((float)block->getH() / (float)s0->cont->getH());
+            out_features.push_back((float)block->n_boxes);
 
-            block_id_to_index[block->id] = (int)count;
+            block_id_to_index[block->id] = count;
             block_index_to_id.push_back(block->id);
-            
             count++;
         }
     }
 
     static std::multimap<double, Action*> get_ranked_actions(clpState* state, VCS_Function* vcs, int num_actions) {
+        clpState* state_copy = dynamic_cast<clpState*>(state->clone());
+        
         std::list<Action*> actions;
-        state->get_actions(actions);
-
+        state_copy->get_actions(actions);
+        
         std::multimap<double, Action*> ranked_actions;
-
         for (auto a : actions) {
-            double eval = vcs->eval_action(*state, *a);
+            double eval = vcs->eval_action(*state_copy, *a);
             if (eval > 0 && (ranked_actions.size() < num_actions || ranked_actions.begin()->first < eval)) {
                 ranked_actions.insert({eval, a});
                 if (ranked_actions.size() > num_actions) {
@@ -61,138 +53,158 @@ public:
                 }
             } else { delete a; }
         }
-
+        
+        delete state_copy;
         return ranked_actions;
     }
 
-    static void get_actions_data(clpState* state, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, float* out_vcs_evals, int num_actions) {      
+    static void get_actions_data(clpState* state, VCS_Function *vcs, std::map<int, int>& block_id_to_index,
+                                 std::vector<float>& out_features, int num_actions) {     
         std::multimap<double, Action*> ranked_actions = get_ranked_actions(state, vcs, num_actions);
 
-        std::fill(out_blocks, out_blocks + num_actions, -1);
-        std::fill(out_features, out_features + (num_actions * 2), -1.0f);
-        std::fill(out_vcs_evals, out_vcs_evals + num_actions, -1.0f);
+        out_features.clear();
+        out_features.reserve(ranked_actions.size() * N_ACTION_FEATURES);
 
-        size_t count = 0;
+        // Iteramos en reversa (de mejor a peor evaluación)
         for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
-            clp::clpAction* ca = dynamic_cast<clp::clpAction*>(it->second);
-            if (ca) {
-                out_blocks[count] = block_id_to_index[ca->block.id];
-                
-                auto it_m = ca->metrics.begin();
-                out_vcs_evals[count] = (float)(*it_m);
+            auto ca = static_cast<clp::clpAction*>(it->second);
+            
+            out_features.push_back((float)block_id_to_index[ca->block.id]);
+            out_features.push_back((float)ca->metrics.vcs);
+            out_features.push_back((float)ca->metrics.loss);
+            out_features.push_back((float)ca->metrics.cs);
 
-                for (int i = 0; i < N_ACTION_FEATURES; i++) {
-                    it_m++;
-                    out_features[count * N_ACTION_FEATURES + i] = (float)(*it_m);
-                }
-                
-                count++;
-            }
             delete it->second;
         }
     }
 
-    static void get_placed_data(clpState* state, map<int, int>& block_id_to_index, int* out_blocks, float* out_features, int padding) {
+    static void get_placed_data(clpState* state, std::map<int, int>& block_id_to_index, std::vector<float>& out_features) {
+        out_features.clear(); 
+
         std::list<const Action*> path = state->get_path();
         
-        std::fill(out_blocks, out_blocks + padding, -1);
-        std::fill(out_features, out_features + (padding * 4), -1.0f);
-
-        clp::Space space = state->cont->spaces->top();
-        const bool* anchors = space.get_anchor();
-        const Vector3 corner = space.get_corner();
-
-        long sx = anchors[0] ? corner.getX() * -1 + state->cont->getL() : corner.getX();
-        long sy = anchors[1] ? corner.getY() * -1 + state->cont->getW() : corner.getY();
-        long sz = anchors[2] ? corner.getZ() * -1 + state->cont->getH() : corner.getZ();
-
+        // 1. Perspectiva del ESPACIO ACTUAL (Tope del stack)
+        clp::Space current_space = state->cont->spaces->top();
+        const bool* current_anchors = current_space.get_anchor();
+        
         double cL = (double)state->cont->getL();
         double cW = (double)state->cont->getW();
         double cH = (double)state->cont->getH();
 
-        size_t count = 0;
-        for (const Action* a : path) {
-            if (count >= (size_t)padding) break;
+        out_features.reserve(path.size() * N_PLACED_FEATURES);
 
+        for (const Action* a : path) {
             auto ca = static_cast<const clp::clpAction*>(a);
+            
+            // Coordenada global absoluta que calcula el motor para esa acción pasada
             Vector3 coords = ca->space.get_location(ca->block);
 
-            double bx = anchors[0] ? (coords.getX() + ca->block.getL()) * -1 + cL : coords.getX();
-            double by = anchors[1] ? (coords.getY() + ca->block.getW()) * -1 + cW : coords.getY();
-            double bz = anchors[2] ? (coords.getZ() + ca->block.getH()) * -1 + cH : coords.getZ();
+            // 2. Reflejamos TODA la escena usando la perspectiva del espacio actual
+            double bx = current_anchors[0] ? (coords.getX() + ca->block.getL()) * -1 + cL : coords.getX();
+            double by = current_anchors[1] ? (coords.getY() + ca->block.getW()) * -1 + cW : coords.getY();
+            double bz = current_anchors[2] ? (coords.getZ() + ca->block.getH()) * -1 + cH : coords.getZ();
 
-            float contact = 1.0f;
-            if ((bx + ca->block.getL() < sx) || (bx > sx + space.getL()) ||
-                (by + ca->block.getW() < sy) || (by > sy + space.getW()) ||
-                (bz + ca->block.getH() < sz) || (bz > sz + space.getH())) {
-                contact = 0.0f;
-            }
-
-            out_blocks[count] = block_id_to_index[ca->block.id];
-            
-            size_t f_idx = count * 4;
-            out_features[f_idx]     = (float)(bx / cL);
-            out_features[f_idx + 1] = (float)(by / cW);
-            out_features[f_idx + 2] = (float)(bz / cH);
-            out_features[f_idx + 3] = contact;
-
-            count++;
+            // 3. Insertamos las variables correspondientes a cada eje (CORREGIDO)
+            out_features.push_back((float)block_id_to_index[ca->block.id]);
+            out_features.push_back((float)(bx / cL));
+            out_features.push_back((float)(by / cW)); // Asignado correctamente by
+            out_features.push_back((float)(bz / cH)); // Asignado correctamente bz
         }
     }
 
-    static void get_space_features(clpState* state, float* out_features) {
+    static void get_space_data(clpState* state, std::vector<float>& out_features) {
+        out_features.clear();
+
         clp::Space space = state->cont->spaces->top();
         const bool* anchors = space.get_anchor();
         const Vector3 corner = space.get_corner();
 
-        float contL = (float)state->cont->getL();
-        float contW = (float)state->cont->getW();
-        float contH = (float)state->cont->getH();
+        float cL = (float)state->cont->getL();
+        float cW = (float)state->cont->getW();
+        float cH = (float)state->cont->getH();
 
-        out_features[0] = static_cast<float>(anchors[0] ? corner.getX() * -1 + contL : corner.getX()) / contL;
-        out_features[1] = static_cast<float>(anchors[1] ? corner.getY() * -1 + contW : corner.getY()) / contW;
-        out_features[2] = static_cast<float>(anchors[2] ? corner.getZ() * -1 + contH : corner.getZ()) / contH;
+        out_features.reserve(N_SPACE_FEATURES);
+
+        out_features.push_back((float)(anchors[0] ? corner.getX() * -1 + cL : corner.getX()) / cL);
+        out_features.push_back((float)(anchors[1] ? corner.getY() * -1 + cW : corner.getY()) / cW);
+        out_features.push_back((float)(anchors[2] ? corner.getZ() * -1 + cH : corner.getZ()) / cH);
         
-        out_features[3] = static_cast<float>(space.getL()) / contL;
-        out_features[4] = static_cast<float>(space.getW()) / contW;
-        out_features[5] = static_cast<float>(space.getH()) / contH;
+        out_features.push_back((float)space.getL() / cL);
+        out_features.push_back((float)space.getW() / cW);
+        out_features.push_back((float)space.getH() / cH);
     }
 
-    // Retorna el ratio de volumen ocupado (0.0 a 1.0)
-    static double get_volume(clpState* state) {
+    static double get_volume_ratio(clpState* state) {
         return state->cont->getOccupiedVolume() / state->cont->getVolume();
     }
 
-    static void get_actions_data_batch(const std::vector<clp::clpState*>& states, VCS_Function* vcs, int w, map<int, int>& block_id_to_index, int* out_blocks_ptr, float* out_features_ptr, float* out_vcs_evals_ptr) {
-        size_t num_states = states.size();
-        size_t limit = (size_t)(w * w);
+    static std::vector<std::vector<float>> get_actions_data_batch(const std::vector<clpState*>& states, VCS_Function* vcs, std::map<int, int>& block_id_to_index, int num_actions) {
+        std::vector<std::vector<float>> batch_features;
+        batch_features.reserve(states.size());
 
-        for (size_t i = 0; i < num_states; ++i) {
-            int* current_block_ptr = out_blocks_ptr + (i * limit);
-            float* current_feature_ptr = out_features_ptr + (i * limit * 2);
-            float* current_bias_ptr = out_vcs_evals_ptr + (i * limit);
+        for (clpState* state : states) {
+            std::vector<float> state_features;
             
-            get_actions_data(states[i], vcs, w, block_id_to_index, current_block_ptr, current_feature_ptr, current_bias_ptr, limit);
+            // 2. Extraemos las características enviando el multimap por referencia
+            get_actions_data(state, vcs, block_id_to_index, state_features, num_actions);
+            
+            batch_features.push_back(std::move(state_features));
         }
+
+        return batch_features;
     }
 
-    static void get_placed_data_batch(const std::vector<clp::clpState*>& states, map<int, int>& block_id_to_index, int* out_blocks_ptr, float* out_features_ptr, int padding = 64) {
-        size_t num_states = states.size();
+    static void get_actions_greedy_eval(clpState* state, VCS_Function* vcs,
+                                        const std::multimap<double, Action*>& ranked_actions,
+                                        std::vector<float>& out_greedy_values) {
+        out_greedy_values.clear();
+        out_greedy_values.reserve(ranked_actions.size());
 
-        for (size_t i = 0; i < num_states; ++i) {
-            int* current_block_ptr = out_blocks_ptr + (i * padding);
-            float* current_feature_ptr = out_features_ptr + (i * padding * 4);
+        // Instanciamos la estrategia de búsqueda Greedy usando tu framework
+        SearchStrategy* gr = new Greedy(vcs);
+
+        for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); ++it) {
+            // Clonamos el estado para simular la transición sin alterar el entorno actual
+            clpState* s_copy = static_cast<clpState*>(state->clone());
+            s_copy->transition(*it->second);
             
-            get_placed_data(states[i], block_id_to_index, current_block_ptr, current_feature_ptr, padding);
+            // Evaluamos el estado resultante con el rollout Greedy
+            double value = gr->run(*s_copy);
+            out_greedy_values.push_back((float)value);
+
+            delete s_copy;
         }
+
+        delete gr; // Limpieza de la estrategia
     }
 
-    static void get_space_features_batch(const std::vector<clp::clpState*>& states, float* out_spaces_ptr) {
-        size_t num_states = states.size();
+    static std::vector<std::vector<float>> get_placed_data_batch(const std::vector<clpState*>& states, std::map<int, int>& block_id_to_index) {
+        std::vector<std::vector<float>> batch_features;
+        batch_features.reserve(states.size());
 
-        for (size_t i = 0; i < num_states; ++i) {
-            get_space_features(states[i], out_spaces_ptr + (i * 6));
+        for (clpState* state : states) {
+            std::vector<float> state_features; // Nace vacío, tamaño 0
+            
+            // La función lo llenará con el tamaño exacto que necesite
+            get_placed_data(state, block_id_to_index, state_features);
+            
+            batch_features.push_back(std::move(state_features));
         }
+
+        return batch_features;
+    }
+
+    static std::vector<std::vector<float>> get_space_data_batch(const std::vector<clpState*>& states) {
+        std::vector<std::vector<float>> batch_spaces;
+        batch_spaces.reserve(states.size());
+
+        for (clpState* state : states) {
+            std::vector<float> space_features;
+            get_space_data(state, space_features);
+            batch_spaces.push_back(std::move(space_features));
+        }
+
+        return batch_spaces;
     }
 };
 

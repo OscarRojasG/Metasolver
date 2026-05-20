@@ -209,7 +209,7 @@ int main(int argc, char** argv){
 
   	if (_verbose || _verbose2) {
 		cout << "BLOCKS" << endl;
-		printer.print_blocks();
+		printer.printBlocks();
 		cout << endl;
 
 		cout << "SOLVE STEPS" << endl;
@@ -218,21 +218,24 @@ int main(int argc, char** argv){
 			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
 
 			cout << "Actions" << endl;
-			printer.print_actions(true);
+			printer.printActions();
 
 			cout << "Placed" << endl;
-			printer.print_placed();
+			printer.printPlaced();
 
 			cout << "Space" << endl;
-			printer.print_space();	
+			printer.printSpace();	
 
 			cout << "Selected Block" << endl;
-			printer.print_block_index(clp_action->block.id);
+			printer.printBlockIndex(clp_action->block.id);
 
 			s00->transition(*action);
 			
 			cout << "Volume" << endl;
-			printer.print_volume();
+			printer.printVolume();
+
+			cout << "Greedy" << endl;
+			printer.printGreedy();
 
 			cout << endl;
 		}

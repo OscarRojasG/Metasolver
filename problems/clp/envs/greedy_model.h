@@ -12,7 +12,7 @@
 #include "Greedy.h"
 #include "VCS_Function.h"
 #include "envs/env_utils_python.h"
-#include "envs/bsm_env.h"
+#include "envs/env.h"
 
 namespace py = pybind11;
 
@@ -25,11 +25,15 @@ public:
 
     GreedyModel(clpState* s0, int w);
 
-    py::array_t<float> get_block_features();
+    std::vector<float> get_block_data();
+
+    std::vector<float> get_action_data();
+
+    std::vector<float> get_pblock_data();
+
+    std::vector<float> get_space_data();
 
     void transition(int selected_index);
-
-    py::dict get_dict();
 
     bool is_finished();
 
@@ -40,13 +44,10 @@ private:
     map<int, int> block_id_to_index;
     std::vector<int> block_index_to_id;
 
-    py::array_t<float> block_features;
-    py::array_t<int32_t> action_blocks;
-    py::array_t<float> action_features;
-    py::array_t<int32_t> placed_blocks;
-    py::array_t<float> placed_features;
-    py::array_t<float> space_features;
-    py::array_t<float> biases;
+    std::vector<float> block_data;
+    std::vector<float> action_data;
+    std::vector<float> placed_data;
+    std::vector<float> space_data;
 
     bool completed = false;
 

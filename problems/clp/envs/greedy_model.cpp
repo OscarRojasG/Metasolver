@@ -13,31 +13,30 @@ GreedyModel::GreedyModel(clpState* s0, int w) : ENV(s0, 999999.9, std::chrono::s
     double r = 0.0;
     vcs = new VCS_Function(s0->nb_left_boxes, *s0->cont, alpha, beta, gamma, p, delta, 0.0, r);
 
-    EnvUtilsPython::get_blocks_data(s0, block_features, block_id_to_index, block_index_to_id);
+    block_data = EnvUtilsPython::get_blocks_data(s0, block_id_to_index, block_index_to_id);
+    update();
 }
 
 GreedyModel::GreedyModel(std::string filename, int instance_number, int w, double min_fr) 
     : GreedyModel(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w) {}
 
-py::array_t<float> GreedyModel::get_block_features() {
-    return block_features;
+std::vector<float> GreedyModel::get_block_data() {
+    return block_data;
 }
 
-py::dict GreedyModel::get_dict() {
-    update(); 
-    py::dict d;
-    d["act_blocks"] = action_blocks;
-    d["act_feats"] = action_features;
-    d["pl_blocks"] = placed_blocks;
-    d["pl_feats"] = placed_features;
-    d["sp_feats"] = space_features;
-    d["biases"] = biases;
-    return d;
+std::vector<float> GreedyModel::get_action_data() {
+    return action_data;
+}
+
+std::vector<float> GreedyModel::get_pblock_data() {
+    return placed_data;
+}
+
+std::vector<float> GreedyModel::get_space_data() {
+    return space_data;
 }
 
 void GreedyModel::transition(int selected_index) {
-    int i = 0;
-
     std::list<Action*> actions;
     current_node->get_actions(actions);
 
@@ -56,6 +55,8 @@ void GreedyModel::transition(int selected_index) {
             if (child_actions.size() == 0) {
                 final_time = get_elapsed_time();
                 completed = true;
+            } else {
+                update();
             }
             
             // Liberar la lista de acciones para evitar memory leaks
@@ -63,7 +64,6 @@ void GreedyModel::transition(int selected_index) {
             for (auto action_ptr : child_actions) delete action_ptr;
             break;
         }
-        i++;
     }
 }
 
@@ -72,9 +72,9 @@ bool GreedyModel::is_finished() {
 }
 
 void GreedyModel::update() {
-    EnvUtilsPython::get_actions_data(current_node, vcs, w, block_id_to_index, action_blocks, action_features, biases);
-    EnvUtilsPython::get_placed_data(current_node, block_id_to_index, placed_blocks, placed_features);
-    EnvUtilsPython::get_space_features(current_node, space_features);
+    action_data = EnvUtilsPython::get_actions_data(current_node, vcs, block_id_to_index, w*w);
+    placed_data = EnvUtilsPython::get_placed_data(current_node, block_id_to_index);
+    space_data = EnvUtilsPython::get_space_data(current_node);
 }
 
 void register_greedy_model(py::module &m) {
@@ -88,8 +88,11 @@ void register_greedy_model(py::module &m) {
         .def_readwrite("final_time", &GreedyModel::final_time)
         .def_readwrite("w", &GreedyModel::w)
 
-        .def("get_block_features", &GreedyModel::get_block_features)
-        .def("get_dict", &GreedyModel::get_dict)
+        .def("get_block_data", &GreedyModel::get_block_data)
+        .def("get_action_data", &GreedyModel::get_action_data)
+        .def("get_pblock_data", &GreedyModel::get_pblock_data)
+        .def("get_space_data", &GreedyModel::get_space_data)
+
         .def("transition", &GreedyModel::transition, py::arg("selected_index"))
         .def("is_finished", &GreedyModel::is_finished);
 }

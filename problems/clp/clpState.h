@@ -28,6 +28,13 @@ class BoxShape; // Forward declaration
 class BlockSet;
 class clpState;
 
+class Metrics {
+public:
+	double vcs;
+	double cs;
+	double loss;
+};
+
 class clpAction : public Action{
 public:
 	clpAction(const Block& block, const Space& space) : block(block), space(space) { }
@@ -39,8 +46,7 @@ public:
 	const Block& block;
 	const Space space;
 
-	mutable list <double> metrics;
-
+	mutable Metrics metrics;
 };
 
 bool is_constructible(const clpState& s, const Block& b);

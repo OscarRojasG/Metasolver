@@ -39,12 +39,7 @@ public:
 
 private:
     clpState* current_node;
-    VCS_Function *vcs;
 
-    map<int, int> block_id_to_index;
-    std::vector<int> block_index_to_id;
-
-    std::vector<float> block_data;
     std::vector<float> action_data;
     std::vector<float> placed_data;
     std::vector<float> space_data;

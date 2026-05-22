@@ -8,12 +8,6 @@ GreedyModel::GreedyModel(clpState* s0, int w) : ENV(s0, 999999.9, std::chrono::s
     volume = 0.0;
     this->w = w;
 
-    // VCS y parámetros
-    double alpha = 4.0, beta = 1.0, gamma = 0.2, delta = 1.0, p = 0.04;
-    double r = 0.0;
-    vcs = new VCS_Function(s0->nb_left_boxes, *s0->cont, alpha, beta, gamma, p, delta, 0.0, r);
-
-    block_data = EnvUtilsPython::get_blocks_data(s0, block_id_to_index, block_index_to_id);
     update();
 }
 
@@ -48,6 +42,7 @@ void GreedyModel::transition(int selected_index) {
         if (ca && ca->block.id == block_id) {
             current_node->transition(*a);
             volume = current_node->get_value();
+            best_state = current_node;
 
             list<Action*> child_actions;
             current_node->get_actions(child_actions);
@@ -78,7 +73,7 @@ void GreedyModel::update() {
 }
 
 void register_greedy_model(py::module &m) {
-    py::class_<GreedyModel>(m, "GreedyModel")
+    py::class_<GreedyModel, ENV>(m, "GreedyModel")
         .def(py::init<std::string, int, int, double>(), 
                 py::arg("filename"), 
                 py::arg("instance_number"),
@@ -94,5 +89,7 @@ void register_greedy_model(py::module &m) {
         .def("get_space_data", &GreedyModel::get_space_data)
 
         .def("transition", &GreedyModel::transition, py::arg("selected_index"))
-        .def("is_finished", &GreedyModel::is_finished);
+        .def("is_finished", &GreedyModel::is_finished)
+
+        .def("get_path", &ENV::get_path);
 }

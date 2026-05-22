@@ -7,6 +7,7 @@
 #include "VCS_Function.h"
 #include "BlockMetrics.h"
 #include <chrono>
+#include "envs/env_utils_python.h"
 
 class ENV {
 public:
@@ -22,14 +23,48 @@ public:
         this->s0 = s0;
         this->timelimit = timelimit;
         this->start_time = start_time;
+
+        // VCS y parámetros
+        double alpha = 4.0, beta = 1.0, gamma = 0.2, delta = 1.0, p = 0.04;
+        double r = 0.0;
+        vcs = new VCS_Function(s0->nb_left_boxes, *s0->cont, alpha, beta, gamma, p, delta, 0.0, r);
+
+        block_data = EnvUtilsPython::get_blocks_data(s0, block_id_to_index, block_index_to_id);
     }
 
     double get_path_length() {
         return best_state->get_path().size();
     }
 
+    std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<float>>> get_path() {
+        clpState* s = dynamic_cast<clpState*> (s0->clone());
+        list<const Action*>& actions = best_state->get_path();
+
+        std::vector<clpState*> path_nodes;
+        path_nodes.push_back(s0);
+
+        for(auto action:actions) {
+			const clpAction* a = dynamic_cast<const clpAction*> (action);
+            s->transition(*a);
+
+            clpState* s_copy = dynamic_cast<clpState*> (s->clone());
+            path_nodes.push_back(s_copy);
+        }
+
+        std::vector<std::vector<float>> placed_data = EnvUtilsPython::get_placed_data_batch(path_nodes, block_id_to_index);
+        std::vector<std::vector<float>> space_data = EnvUtilsPython::get_space_data_batch(path_nodes);
+
+        return { placed_data, space_data };
+    }
+
 protected:
     std::chrono::steady_clock::time_point start_time;
+
+    VCS_Function *vcs;
+
+    std::vector<float> block_data;
+    map<int, int> block_id_to_index;
+    std::vector<int> block_index_to_id;
     
     double get_elapsed_time() {
         auto now = std::chrono::steady_clock::now();

@@ -45,12 +45,16 @@ public:
     }
 
     void printGreedy() {
-        double max_greedy_value = -1e9; 
         SearchStrategy* gr = new Greedy(vcs);
+        std::multimap<double, Action*> ranked_actions = EnvUtils::get_ranked_actions(state, vcs, w*w);
 
-        clpState* s_copy = dynamic_cast<clpState*>(state->clone()); 
-        double value = gr->run(*s_copy);
-        cout << value << "\n";
+        for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); it++) {
+            clpState* s_copy = dynamic_cast<clpState*>(state->clone()); 
+            s_copy->transition(*it->second);
+
+            double value = gr->run(*s_copy);
+            cout << value << "\n";
+        }
 
         delete gr;
     }

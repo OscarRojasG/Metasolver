@@ -229,13 +229,13 @@ int main(int argc, char** argv){
 			cout << "Selected Block" << endl;
 			printer.printBlockIndex(clp_action->block.id);
 
+			cout << "Greedy" << endl;
+			printer.printGreedy();
+
 			s00->transition(*action);
 			
 			cout << "Volume" << endl;
 			printer.printVolume();
-
-			cout << "Greedy" << endl;
-			printer.printGreedy();
 
 			cout << endl;
 		}

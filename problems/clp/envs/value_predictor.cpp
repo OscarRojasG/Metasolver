@@ -2,11 +2,16 @@
 
 namespace py = pybind11;
 
-ValuePredictor::ValuePredictor(std::string filename, int instance_number, int w, double min_fr) : BSM_ENV(filename, instance_number, w, min_fr) {
+ValuePredictor::ValuePredictor(clpState* s0, int w) : ENV(s0, 999999.9, std::chrono::steady_clock::now()) {
+    this->w = w;
+    
     clp::clpState* root_copy = dynamic_cast<clp::clpState*>(s0->clone());
     current_states.push_back(root_copy);
     update();
 }
+
+ValuePredictor::ValuePredictor(std::string filename, int instance_number, int w, double min_fr) 
+    : ValuePredictor(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w) {}
 
 bool ValuePredictor::is_finished() {
     return completed;

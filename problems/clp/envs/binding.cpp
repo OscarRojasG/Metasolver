@@ -15,7 +15,6 @@ void register_value_predictor(py::module &m);
 
 PYBIND11_MODULE(bsm_engine, m) {
     py::class_<ENV>(m, "ENV");
-    py::class_<BSM_ENV, ENV>(m, "BSM_ENV");
 
     //register_bsm_gm(m);
     //register_bsm_vcs(m);

@@ -12,15 +12,15 @@
 #include "Greedy.h"
 #include "VCS_Function.h"
 #include "envs/env_utils_python.h"
-#include "envs/bsm_env.h"
+#include "envs/env.h"
 
 namespace py = pybind11;
 
-class ValuePredictor : public BSM_ENV {
+class ValuePredictor : public ENV {
 public:
-    ValuePredictor(std::string filename, int instance_number, int w, double min_fr);
+    ValuePredictor(std::string filename, int instance_number, int w, double min_fr=1);
 
-    ValuePredictor(clpState* s0, int w, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now());
+    ValuePredictor(clpState* s0, int w);
     
     void expand(const std::vector<std::vector<int>>& selected_blocks);
 
@@ -37,6 +37,8 @@ public:
     std::vector<std::vector<float>> get_succ_space_data_batch()  { return succ_space_data;  }
 
     bool is_finished();
+
+    int w;
 
 private:
     std::vector<clp::clpState*> current_states;

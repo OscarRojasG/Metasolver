@@ -36,15 +36,13 @@ public:
         }
     }
 
-    static std::multimap<double, Action*> get_ranked_actions(clpState* state, VCS_Function* vcs, int num_actions) {
-        clpState* state_copy = dynamic_cast<clpState*>(state->clone());
-        
+    static std::multimap<double, Action*> get_ranked_actions(clpState* state, VCS_Function* vcs, int num_actions) {       
         std::list<Action*> actions;
-        state_copy->get_actions(actions);
+        state->get_actions(actions);
         
         std::multimap<double, Action*> ranked_actions;
         for (auto a : actions) {
-            double eval = vcs->eval_action(*state_copy, *a);
+            double eval = vcs->eval_action(*state, *a);
             if (eval > 0 && (ranked_actions.size() < num_actions || ranked_actions.begin()->first < eval)) {
                 ranked_actions.insert({eval, a});
                 if (ranked_actions.size() > num_actions) {
@@ -54,7 +52,6 @@ public:
             } else { delete a; }
         }
         
-        delete state_copy;
         return ranked_actions;
     }
 

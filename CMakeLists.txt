@@ -74,7 +74,6 @@ problems/clp/objects2/BoxShape.cpp
 problems/clp/objects2/Space.cpp
 problems/clp/objects2/SpaceSet.cpp
 problems/clp/objects2/Block_fsb.cpp
-problems/clp/BlockMetrics.cpp
 )
 
 ADD_LIBRARY(

@@ -14,27 +14,11 @@ GreedyModel::GreedyModel(clpState* s0, int w) : ENV(s0, 999999.9, std::chrono::s
 GreedyModel::GreedyModel(std::string filename, int instance_number, int w, double min_fr) 
     : GreedyModel(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w) {}
 
-std::vector<float> GreedyModel::get_block_data() {
-    return block_data;
-}
-
-std::vector<float> GreedyModel::get_action_data() {
-    return action_data;
-}
-
-std::vector<float> GreedyModel::get_pblock_data() {
-    return placed_data;
-}
-
-std::vector<float> GreedyModel::get_space_data() {
-    return space_data;
-}
-
 void GreedyModel::transition(int selected_index) {
     std::list<Action*> actions;
     current_node->get_actions(actions);
 
-    int block_id = block_index_to_id[selected_index];
+    int block_id = block_data->get_block_index_to_id().at(selected_index);
 
     for (auto a : actions) {
         clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
@@ -62,14 +46,11 @@ void GreedyModel::transition(int selected_index) {
     }
 }
 
-bool GreedyModel::is_finished() {
-    return completed;
-}
-
 void GreedyModel::update() {
-    action_data = EnvUtilsPython::get_actions_data(current_node, vcs, block_id_to_index, w*w);
-    placed_data = EnvUtilsPython::get_placed_data(current_node, block_id_to_index);
-    space_data = EnvUtilsPython::get_space_data(current_node);
+    StateData state_data(*block_data, current_node, vcs, w*w);
+    action_data = state_data.get_action_features();
+    placed_data = state_data.get_placed_features();
+    space_data = state_data.get_space_features();
 }
 
 void register_greedy_model(py::module &m) {
@@ -83,7 +64,7 @@ void register_greedy_model(py::module &m) {
         .def_readwrite("final_time", &GreedyModel::final_time)
         .def_readwrite("w", &GreedyModel::w)
 
-        .def("get_block_data", &GreedyModel::get_block_data)
+        .def("get_block_data", &ENV::get_block_data)
         .def("get_action_data", &GreedyModel::get_action_data)
         .def("get_pblock_data", &GreedyModel::get_pblock_data)
         .def("get_space_data", &GreedyModel::get_space_data)

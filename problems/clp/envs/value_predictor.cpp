@@ -25,7 +25,7 @@ void ValuePredictor::expand(const std::vector<std::vector<int>>& selected_blocks
         const std::vector<int>& chosen_block_ids = selected_blocks[i];
 
         for (int block_id : chosen_block_ids) {
-            int target_block_id = block_index_to_id[block_id];
+            int target_block_id = block_data->get_block_index_to_id().at(block_id);
 
             // 1. Creamos el clon del hijo primero
             clp::clpState* child_state = dynamic_cast<clp::clpState*>(current_state->clone());
@@ -113,29 +113,17 @@ void ValuePredictor::prune(const std::vector<int>& selected_states) {
 }
 
 void ValuePredictor::update() {
-    // Limpiamos los buffers de datos vectoriales previos
-    action_data.clear();
-    placed_data.clear();
-    space_data.clear();
-
-    // Re-calculamos las representaciones vectoriales para cada uno de los estados vivos en el haz
-    for (auto* state : current_states) {
-        action_data.push_back(EnvUtilsPython::get_actions_data(state, vcs, block_id_to_index, w * w));
-        placed_data.push_back(EnvUtilsPython::get_placed_data(state, block_id_to_index));
-        space_data.push_back(EnvUtilsPython::get_space_data(state));
-    }
+    BatchData batch_data(*block_data, current_states, vcs, w*w);
+    action_data = batch_data.get_batch_action_features();
+    placed_data = batch_data.get_batch_placed_features();
+    space_data = batch_data.get_batch_space_features();
 }
 
 void ValuePredictor::update_succ() {
-    succ_action_data.clear();
-    succ_placed_data.clear();
-    succ_space_data.clear();
-
-    for (auto* state : succ_states) {
-        succ_action_data.push_back(EnvUtilsPython::get_actions_data(state, vcs, block_id_to_index, w * w));
-        succ_placed_data.push_back(EnvUtilsPython::get_placed_data(state, block_id_to_index));
-        succ_space_data.push_back(EnvUtilsPython::get_space_data(state));
-    }
+    BatchData batch_data(*block_data, succ_states, vcs, w*w);
+    succ_action_data = batch_data.get_batch_action_features();
+    succ_placed_data = batch_data.get_batch_placed_features();
+    succ_space_data = batch_data.get_batch_space_features();
 }
 
 // Registro del nuevo entorno para Pybind11
@@ -150,7 +138,7 @@ void register_value_predictor(py::module &m) {
         .def_readwrite("final_time", &ValuePredictor::final_time)
         .def_readwrite("w", &ValuePredictor::w)
 
-        .def("get_block_data", &ValuePredictor::get_block_data)
+        .def("get_block_data", &ENV::get_block_data)
         .def("get_action_data_batch", &ValuePredictor::get_action_data_batch)
         .def("get_pblock_data_batch", &ValuePredictor::get_pblock_data_batch)
         .def("get_space_data_batch", &ValuePredictor::get_space_data_batch)

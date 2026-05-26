@@ -13,7 +13,6 @@
 #include "../objects2/AABB.h"
 #include "../objects2/Block.h"
 #include "../../metasolver/GlobalVariables.h"
-#include "BlockMetrics.h"
 
 using namespace std;
 

@@ -5,9 +5,9 @@
 #include "BSG.h"
 #include "Greedy.h"
 #include "VCS_Function.h"
-#include "BlockMetrics.h"
 #include <chrono>
-#include "envs/env_utils_python.h"
+#include "data/block_data.h"
+#include "data/batch_data.h"
 
 class ENV {
 public:
@@ -29,7 +29,11 @@ public:
         double r = 0.0;
         vcs = new VCS_Function(s0->nb_left_boxes, *s0->cont, alpha, beta, gamma, p, delta, 0.0, r);
 
-        block_data = EnvUtilsPython::get_blocks_data(s0, block_id_to_index, block_index_to_id);
+        block_data = new BlockData(s0);
+    }
+
+    std::vector<float> get_block_data() {
+        return block_data->get_block_features();
     }
 
     double get_path_length() {
@@ -51,8 +55,9 @@ public:
             path_nodes.push_back(s_copy);
         }
 
-        std::vector<std::vector<float>> placed_data = EnvUtilsPython::get_placed_data_batch(path_nodes, block_id_to_index);
-        std::vector<std::vector<float>> space_data = EnvUtilsPython::get_space_data_batch(path_nodes);
+        BatchData batch_data(*block_data, path_nodes, vcs, 1);
+        std::vector<std::vector<float>> placed_data = batch_data.get_batch_placed_features();
+        std::vector<std::vector<float>> space_data = batch_data.get_batch_space_features();
 
         return { placed_data, space_data };
     }
@@ -60,11 +65,8 @@ public:
 protected:
     std::chrono::steady_clock::time_point start_time;
 
+    BlockData *block_data;
     VCS_Function *vcs;
-
-    std::vector<float> block_data;
-    map<int, int> block_id_to_index;
-    std::vector<int> block_index_to_id;
     
     double get_elapsed_time() {
         auto now = std::chrono::steady_clock::now();

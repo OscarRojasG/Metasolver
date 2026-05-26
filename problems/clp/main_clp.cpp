@@ -18,8 +18,9 @@
 #include "DoubleEffort.h"
 #include "GlobalVariables.h"
 #include "BSG.h"
-#include "BlockMetrics.h"
 #include "DataPrinter.h"
+#include "data/block_data.h"
+#include "data/state_data.h"
 
 using namespace std;
 
@@ -205,37 +206,39 @@ int main(int argc, char** argv){
 	cout << time << endl;
 
 	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
-	DataPrinter printer(s00, vcs, w);
 
   	if (_verbose || _verbose2) {
 		cout << "BLOCKS" << endl;
-		printer.printBlocks();
+		BlockData block_data(s00);
+		DataPrinter::printBlocks(block_data);
 		cout << endl;
 
 		cout << "SOLVE STEPS" << endl;
+		StateData state_data(block_data, s00, vcs, w*w);
 
 		for(auto action:actions) {
 			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
 
 			cout << "Actions" << endl;
-			printer.printActions();
+			DataPrinter::printActions(state_data);
 
 			cout << "Placed" << endl;
-			printer.printPlaced();
+			DataPrinter::printPlaced(state_data);
 
 			cout << "Space" << endl;
-			printer.printSpace();	
+			DataPrinter::printSpace(state_data);
 
 			cout << "Selected Block" << endl;
-			printer.printBlockIndex(clp_action->block.id);
+			DataPrinter::printBlockIndex(block_data, clp_action->block.id);
 
 			cout << "Greedy" << endl;
-			printer.printGreedy();
+			DataPrinter::printGreedy(state_data);
 
 			s00->transition(*action);
+			state_data = StateData(block_data, s00, vcs, w*w);
 			
 			cout << "Volume" << endl;
-			printer.printVolume();
+			DataPrinter::printVolume(state_data);
 
 			cout << endl;
 		}

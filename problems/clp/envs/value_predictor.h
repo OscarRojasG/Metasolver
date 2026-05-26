@@ -11,7 +11,7 @@
 #include "BSG.h"
 #include "Greedy.h"
 #include "VCS_Function.h"
-#include "envs/env_utils_python.h"
+#include "data/batch_data.h"
 #include "envs/env.h"
 
 namespace py = pybind11;
@@ -25,8 +25,6 @@ public:
     void expand(const std::vector<std::vector<int>>& selected_blocks);
 
     void prune(const std::vector<int>& selected_states);
-
-    std::vector<float> get_block_data() { return block_data; }
 
     std::vector<std::vector<float>> get_action_data_batch() { return action_data; }
     std::vector<std::vector<float>> get_pblock_data_batch() { return placed_data; }

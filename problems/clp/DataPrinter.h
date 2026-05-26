@@ -1,91 +1,74 @@
+#include <iostream>
+#include <vector>
 #include <list>
 #include "VCS_Function.h"
-#include "envs/env_utils.h"
 #include "clpState.h"
+#include "data/block_data.h"
+#include "data/state_data.h"
 
 using namespace std;
 using namespace metasolver;
 
 class DataPrinter {
-private:
-    clpState* state;
-    VCS_Function* vcs;
-    int w;
-    
-    // Estructuras para el mapeo de IDs requeridas por las funciones de EnvUtils
-    std::map<int, int> block_id_to_index;
-    std::vector<int> block_index_to_id;
 
 public:
-    DataPrinter(clpState* state, VCS_Function* vcs, int w) : state(state), vcs(vcs), w(w) {}
+    static void printBlocks(const BlockData& block_data) {
+        const std::vector<float>& features = block_data.get_block_features();
 
-    void printBlocks() {
-        std::vector<float> features;
-        // get_blocks_data llena el vector y además inicializa las estructuras de mapeo de IDs
-        EnvUtils::get_blocks_data(state, features, block_id_to_index, block_index_to_id);
-
-        for (size_t i = 0; i < features.size(); i += EnvUtils::N_BLOCK_FEATURES) {
-            for (int j = 0; j < EnvUtils::N_BLOCK_FEATURES; ++j) {
-                cout << features[i + j] << (j == EnvUtils::N_BLOCK_FEATURES - 1 ? "" : " ");
+        for (size_t i = 0; i < features.size(); i += BlockData::N_BLOCK_FEATURES) {
+            for (int j = 0; j < BlockData::N_BLOCK_FEATURES; ++j) {
+                cout << features[i + j] << (j == BlockData::N_BLOCK_FEATURES - 1 ? "" : " ");
             }
             cout << "\n";
         }
     }
 
-    void printActions() {
-        std::vector<float> features;
-        EnvUtils::get_actions_data(state, vcs, block_id_to_index, features, w*w);
+    static void printActions(const StateData& state_data) {
+        const std::vector<float>& features = state_data.get_action_features();
 
-        for (size_t i = 0; i < features.size(); i += EnvUtils::N_ACTION_FEATURES) {
-            for (int j = 0; j < EnvUtils::N_ACTION_FEATURES; ++j) {
-                cout << features[i + j] << (j == EnvUtils::N_ACTION_FEATURES - 1 ? "" : " ");
+        for (size_t i = 0; i < features.size(); i += StateData::N_ACTION_FEATURES) {
+            for (int j = 0; j < StateData::N_ACTION_FEATURES; ++j) {
+                cout << features[i + j] << (j == StateData::N_ACTION_FEATURES - 1 ? "" : " ");
             }
             cout << "\n";
         }
     }
 
-    void printGreedy() {
-        SearchStrategy* gr = new Greedy(vcs);
-        std::multimap<double, Action*> ranked_actions = EnvUtils::get_ranked_actions(state, vcs, w*w);
-
-        for (auto it = ranked_actions.rbegin(); it != ranked_actions.rend(); it++) {
-            clpState* s_copy = dynamic_cast<clpState*>(state->clone()); 
-            s_copy->transition(*it->second);
-
-            double value = gr->run(*s_copy);
-            cout << value << "\n";
+    static void printGreedy(StateData& state_data) {
+        std::vector<float> values = state_data.get_greedy_values();
+        
+        for (size_t i = 0; i < values.size(); i++) {
+            cout << values[i] << "\n";
         }
-
-        delete gr;
     }
 
-    void printPlaced() {
-        std::vector<float> features;
-        EnvUtils::get_placed_data(state, block_id_to_index, features);
+    static void printPlaced(const StateData& state_data) {
+        const std::vector<float>& features = state_data.get_placed_features();
 
-        for (size_t i = 0; i < features.size(); i += EnvUtils::N_PLACED_FEATURES) {
-            for (int j = 0; j < EnvUtils::N_PLACED_FEATURES; ++j) {
-                cout << features[i + j] << (j == EnvUtils::N_PLACED_FEATURES - 1 ? "" : " ");
+        for (size_t i = 0; i < features.size(); i += StateData::N_PLACED_FEATURES) {
+            for (int j = 0; j < StateData::N_PLACED_FEATURES; ++j) {
+                cout << features[i + j] << (j == StateData::N_PLACED_FEATURES - 1 ? "" : " ");
             }
             cout << "\n";
         }
     }
 
-    void printSpace() {
-        std::vector<float> features;
-        EnvUtils::get_space_data(state, features);
+    static void printSpace(const StateData& state_data) {
+        const std::vector<float>& features = state_data.get_space_features();
 
-        for (int j = 0; j < EnvUtils::N_SPACE_FEATURES; ++j) {
-            cout << features[j] << (j == EnvUtils::N_SPACE_FEATURES - 1 ? "" : " ");
+        if (!features.empty()) {
+            for (size_t j = 0; j < features.size(); ++j) {
+                cout << features[j] << (j == features.size() - 1 ? "" : " ");
+            }
+            cout << "\n";
         }
-        cout << "\n";
     }
 
-    void printVolume() {
-        cout << EnvUtils::get_volume_ratio(state) << "\n";
+    static void printVolume(const StateData& state_data) {
+        cout << state_data.get_volume_ratio() << "\n";
     }
 
-    void printBlockIndex(int block_id) {
-        cout << block_id_to_index[block_id] << "\n";
+    static void printBlockIndex(const BlockData& block_data, int block_id) {
+        cout << block_data.get_block_id_to_index().at(block_id) << "\n";
     }
 };

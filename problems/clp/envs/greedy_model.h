@@ -11,7 +11,7 @@
 #include "BSG.h"
 #include "Greedy.h"
 #include "VCS_Function.h"
-#include "envs/env_utils_python.h"
+#include "data/state_data.h"
 #include "envs/env.h"
 
 namespace py = pybind11;
@@ -25,17 +25,15 @@ public:
 
     GreedyModel(clpState* s0, int w);
 
-    std::vector<float> get_block_data();
-
-    std::vector<float> get_action_data();
-
-    std::vector<float> get_pblock_data();
-
-    std::vector<float> get_space_data();
-
     void transition(int selected_index);
 
-    bool is_finished();
+    const std::vector<float> get_action_data() const { return action_data; }
+
+    const std::vector<float> get_pblock_data() const { return placed_data; }
+
+    const std::vector<float> get_space_data() const { return space_data; }
+
+    const bool is_finished() const { return completed; }
 
 private:
     clpState* current_node;

@@ -32,6 +32,15 @@ public:
         block_data = new BlockData(s0);
     }
 
+    virtual ~ENV() {
+        for (auto b : Block::all_blocks) delete b;
+        Block::all_blocks.clear();
+    
+        delete best_state;
+        delete block_data;
+        delete vcs;
+    }
+
     std::vector<float> get_block_data() {
         return block_data->get_block_features();
     }

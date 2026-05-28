@@ -47,6 +47,7 @@ metasolver/SearchStrategy.cpp
 metasolver/GlobalVariables.cpp
 metasolver/strategies/BSG.cpp
 metasolver/strategies/Greedy.cpp
+metasolver/strategies/GRASP.cpp
 metasolver/State.cpp
 )
 

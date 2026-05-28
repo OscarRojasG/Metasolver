@@ -18,6 +18,7 @@
 #include "DoubleEffort.h"
 #include "GlobalVariables.h"
 #include "BSG.h"
+#include "GRASP.h"
 #include "DataPrinter.h"
 #include "data/block_data.h"
 #include "data/state_data.h"
@@ -191,7 +192,7 @@ int main(int argc, char** argv){
 			bsg = new BSG(vcs, *gr, min(w, 4), 0.0, 0, _plot);
 			ss = new DoubleEffort(*bsg, w);
 		} else {
-			ss = new BSG(vcs,*gr, w, 0.0, 0, _plot);
+			ss = new GRASP(vcs, *gr, w*w);
 		}
 		eval = ss->run(s_copy);
 	}

@@ -1,5 +1,5 @@
 /*
- * GRASP.cpp - Ordenamiento y Selección Basados Estrictamente en SearchStrategy
+ * GRASP.cpp - Corrección de actualización de best_state (Estado Terminal Completo)
  */
 
 #include "GRASP.h"
@@ -27,31 +27,40 @@ list<State*> GRASP::next(list<State*>& S) {
 
     std::vector<Action*> actions_vector(rcl_actions.begin(), rcl_actions.end());
     
-    // Estructura local para emparejar la acción con el valor de su simulación futura
+    // Estructura local para emparejar la acción con el valor macro final de su simulación
     struct CandidatePair {
         Action* original_action;
         double macro_value;
     };
     std::vector<CandidatePair> evaluated_candidates;
 
+    // Guardamos las mejores soluciones terminales de cada rollout para no perderlas
+    // Llave: valor macro, Valor: puntero al clon del estado terminal completo
+    std::multimap<double, State*, std::greater<double>> terminal_states_pool;
+
     // 2. Ejecutamos el rollout para cada acción candidata
     for (Action* act : actions_vector) {
         if (get_time() > timelimit) break;
 
-        // Clonamos y aplicamos la acción para evaluar esta rama
         State* candidate_state = current_state->clone();
         candidate_state->transition(*act);
 
-        // Corremos el algoritmo Greedy externo hasta el final
+        // Corremos el algoritmo Greedy externo hasta llegar al estado terminal
         double solution_value = evaluator_strategy.run(*candidate_state, timelimit, begin_time);
 
-        // Almacenamos el par
+        // EXTRAEMOS EL MEJOR ESTADO TERMINAL: Conseguimos el clon del contenedor completamente lleno 
+        // desde el best_state interno de la estrategia que acaba de terminar.
+        const State* internal_terminal = evaluator_strategy.get_best_state();
+        State* terminal_clone = internal_terminal ? internal_terminal->clone() : candidate_state->clone();
+
         CandidatePair cp;
         cp.original_action = act;
         cp.macro_value = solution_value;
         evaluated_candidates.push_back(cp);
 
-        // Liberamos la simulación, conservando la acción original
+        // Almacenamos el estado terminal indexado por su volumen
+        terminal_states_pool.insert(std::make_pair(solution_value, terminal_clone));
+
         delete candidate_state;
     }
 
@@ -61,15 +70,13 @@ list<State*> GRASP::next(list<State*>& S) {
         return next_generation;
     }
 
-    // 3. ORDENAMOS las acciones de MAYOR a PEOR en función del valor de la SearchStrategy
+    // 3. ORDENAMOS las acciones candidatas de MAYOR a PEOR en función de su rollout
     std::sort(evaluated_candidates.begin(), evaluated_candidates.end(), 
               [](const CandidatePair& a, const CandidatePair& b) {
                   return a.macro_value > b.macro_value;
               });
 
-    // 4. SELECCIÓN GEOMÉTRICA sobre el nuevo ordenamiento macro
-    // Índice 0 (Solución macro más alta): 50% de probabilidad
-    // Índice 1 (Segunda solución macro más alta): 25% de probabilidad, etc.
+    // 4. SELECCIÓN GEOMÉTRICA (50%, 25%, 12.5%...)
     int chosen_idx = 0;
     double r = (double)rand() / RAND_MAX;
     double current_probability = 0.5;
@@ -83,27 +90,35 @@ list<State*> GRASP::next(list<State*>& S) {
         current_probability *= 0.5;
     }
 
-    // Rescatamos la acción ganadora real elegida por el potencial a futuro
     Action* selected_action = evaluated_candidates[chosen_idx].original_action;
     double final_chosen_value = evaluated_candidates[chosen_idx].macro_value;
 
-    // 5. Aplicamos la acción ganadora oficial sobre un clon definitivo para el pipeline
+    // 5. El estado real que avanza en el camino oficial de este arranque GRASP es el hijo intermedio
     State* next_state = current_state->clone();
     next_state->transition(*selected_action);
-
-    // Actualización adaptativa del récord global basado en la cota de la estrategia
-    if (final_chosen_value > get_best_value()) {
-        if (best_state) delete best_state;
-        best_state = next_state->clone();
-        
-        cout << "[GRASP_LookAhead_Verified] Nueva mejor solución macro encontrada (" << get_time() << "): " 
-             << final_chosen_value << endl;
-    }
-
     next_generation.push_back(next_state);
 
-    // 6. LIMPIEZA RIGUROSA DE MEMORIA
-    // Destruimos todas las acciones candidatas, ya que la transición ya se consumó en next_state
+    // 6. ACTUALIZACIÓN ADAPTATIVA CRUCIAL:
+    // Comparamos contra el valor del mejor récord global real.
+    if (final_chosen_value > get_best_value()) {
+        if (best_state) delete best_state;
+        
+        // Buscamos en el pool el estado terminal completo correspondiente al valor ganador
+        auto pool_it = terminal_states_pool.find(final_chosen_value);
+        if (pool_it != terminal_states_pool.end()) {
+            best_state = pool_it->second->clone(); // Guardamos la solución terminal COMPLETA yllena
+        } else {
+            best_state = next_state->clone();
+        }
+        
+        cout << "[GRASP_LookAhead_Fixed] NUEVO RÉCORD GLOBAL ENCONTRADO (" << get_time() << "): " 
+             << get_best_value() << endl;
+    }
+
+    // 7. LIMPIEZA ABSOLUTA DE MEMORIA RAM
+    for (auto& pair : terminal_states_pool) {
+        delete pair.second;
+    }
     for (Action* act : actions_vector) {
         delete act;
     }

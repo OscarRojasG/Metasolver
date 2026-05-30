@@ -61,6 +61,7 @@ class StateData {
             double cL = (double)state->cont->getL();
             double cW = (double)state->cont->getW();
             double cH = (double)state->cont->getH();
+            double md = max({cL, cW, cH});
     
             placed_features.reserve(path.size() * N_PLACED_FEATURES);
     
@@ -73,9 +74,9 @@ class StateData {
                 double bz = current_anchors[2] ? (coords.getZ() + ca->block.getH()) * -1 + cH : coords.getZ();
 
                 placed_features.push_back((float)id_to_idx.at(ca->block.id));
-                placed_features.push_back((float)(bx / cL));
-                placed_features.push_back((float)(by / cW));
-                placed_features.push_back((float)(bz / cH));
+                placed_features.push_back((float)(bx / md));
+                placed_features.push_back((float)(by / md));
+                placed_features.push_back((float)(bz / md));
             }
         }
     
@@ -87,16 +88,17 @@ class StateData {
             float cL = (float)state->cont->getL();
             float cW = (float)state->cont->getW();
             float cH = (float)state->cont->getH();
+            double md = max({cL, cW, cH});
     
             space_features.reserve(N_SPACE_FEATURES);
     
-            space_features.push_back((float)(anchors[0] ? corner.getX() * -1 + cL : corner.getX()) / cL);
-            space_features.push_back((float)(anchors[1] ? corner.getY() * -1 + cW : corner.getY()) / cW);
-            space_features.push_back((float)(anchors[2] ? corner.getZ() * -1 + cH : corner.getZ()) / cH);
+            space_features.push_back((float)(anchors[0] ? corner.getX() * -1 + cL : corner.getX()) / md);
+            space_features.push_back((float)(anchors[1] ? corner.getY() * -1 + cW : corner.getY()) / md);
+            space_features.push_back((float)(anchors[2] ? corner.getZ() * -1 + cH : corner.getZ()) / md);
             
-            space_features.push_back((float)space.getL() / cL);
-            space_features.push_back((float)space.getW() / cW);
-            space_features.push_back((float)space.getH() / cH);
+            space_features.push_back((float)space.getL() / md);
+            space_features.push_back((float)space.getW() / md);
+            space_features.push_back((float)space.getH() / md);
         }
     
     public:

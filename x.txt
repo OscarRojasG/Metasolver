@@ -1,0 +1,11 @@
+***** Creando el contenedor ****
+File(BR): /home/oscar/Escritorio/CLP-Framework/instances/E4-42.txt
+Instance:1
+min_fr:0.98
+Beam width:8
+n_blocks:10000
+box_types:2000
+greedy
+bsg
+copying state
+running

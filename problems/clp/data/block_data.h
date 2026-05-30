@@ -17,12 +17,17 @@ class BlockData {
 
         BlockData(clpState* s0) {
             block_features.reserve(s0->valid_blocks.size() * N_BLOCK_FEATURES);
+
+            double cL = (double)s0->cont->getL();
+            double cW = (double)s0->cont->getW();
+            double cH = (double)s0->cont->getH();
+            double md = max({cL, cW, cH});
     
             int count = 0;
             for (const Block* block : s0->valid_blocks) {          
-                block_features.push_back((float)block->getL() / (float)s0->cont->getL());
-                block_features.push_back((float)block->getW() / (float)s0->cont->getW());
-                block_features.push_back((float)block->getH() / (float)s0->cont->getH());
+                block_features.push_back((float)block->getL() / md);
+                block_features.push_back((float)block->getW() / md);
+                block_features.push_back((float)block->getH() / md);
                 block_features.push_back((float)block->n_boxes);
     
                 block_id_to_index[block->id] = count;

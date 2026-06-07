@@ -76,18 +76,22 @@ list<State*> GRASP::next(list<State*>& S) {
                   return a.macro_value > b.macro_value;
               });
 
-    // 4. SELECCIÓN GEOMÉTRICA (50%, 25%, 12.5%...)
+    // 4. SELECCIÓN GEOMÉTRICA PARAMETRIZADA (Ej: 40%, 20%, 10%...)
     int chosen_idx = 0;
     double r = (double)rand() / RAND_MAX;
-    double current_probability = 0.5;
+    
+    // 0.4 = 40% -> 24% -> 14.4% -> 8.6%...
+    double p_select = 0.3; 
+    double current_probability = p_select;
 
     for (int i = 0; i < n_candidates; ++i) {
+        // Si el número aleatorio cae en el rango o es el último candidato disponible, se selecciona
         if (r < current_probability || i == n_candidates - 1) {
             chosen_idx = i;
             break;
         }
         r -= current_probability;
-        current_probability *= 0.5;
+        current_probability *= (1.0 - p_select);
     }
 
     Action* selected_action = evaluated_candidates[chosen_idx].original_action;

@@ -22,7 +22,6 @@
 #include "DataPrinter.h"
 #include "data/block_data.h"
 #include "data/state_data.h"
-#include "MCTS_RolloutStrategy.h"
 
 using namespace std;
 
@@ -193,7 +192,7 @@ int main(int argc, char** argv){
 			bsg = new BSG(vcs, *gr, min(w, 4), 0.0, 0, _plot);
 			ss = new DoubleEffort(*bsg, w);
 		} else {
-			ss = new MCTS_RolloutStrategy(vcs, w*w, 200);
+			ss = new BSG(vcs, *gr, w, 0.0, 0, _plot);
 		}
 		eval = ss->run(s_copy);
 	}
@@ -208,50 +207,4 @@ int main(int argc, char** argv){
 
 	cout << "total time" << endl;
 	cout << time << endl;
-
-	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
-	auto mcts = dynamic_cast<MCTS_RolloutStrategy*> (ss);
-	std::vector<std::vector<double>> rollout_history = mcts->get_rollout_history();
-	int i = 0;
-
-  	if (_verbose || _verbose2) {
-		cout << "BLOCKS" << endl;
-		BlockData block_data(s00);
-		DataPrinter::printBlocks(block_data);
-		cout << endl;
-
-		cout << "SOLVE STEPS" << endl;
-		StateData state_data(block_data, s00, vcs, w*w);
-
-		for(auto action:actions) {
-			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
-
-			cout << "Actions" << endl;
-			DataPrinter::printActions(state_data);
-
-			cout << "Placed" << endl;
-			DataPrinter::printPlaced(state_data);
-
-			cout << "Space" << endl;
-			DataPrinter::printSpace(state_data);
-
-			cout << "Selected Block" << endl;
-			DataPrinter::printBlockIndex(block_data, clp_action->block.id);
-
-			cout << "Greedy" << endl;
-			std::vector<double> rollout_values = rollout_history[i];
-			for (int j = 0; j < rollout_values.size(); j++) {
-				cout << rollout_values[j] << endl;
-			}
-
-			s00->transition(*action);
-			state_data = StateData(block_data, s00, vcs, w*w);
-			i += 1;
-			
-			cout << "Volume" << endl;
-			DataPrinter::printVolume(state_data);
-
-			cout << endl;
-		}
-	}
 }

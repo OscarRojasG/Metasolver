@@ -193,7 +193,7 @@ int main(int argc, char** argv){
 			bsg = new BSG(vcs, *gr, min(w, 4), 0.0, 0, _plot);
 			ss = new DoubleEffort(*bsg, w);
 		} else {
-			ss = new MCTS_RolloutStrategy(vcs, w*w, 200);
+			ss = new MCTS_RolloutStrategy(vcs, w*w, 10);
 		}
 		eval = ss->run(s_copy);
 	}
@@ -215,8 +215,13 @@ int main(int argc, char** argv){
 	int i = 0;
 
   	if (_verbose || _verbose2) {
-		cout << "BLOCKS" << endl;
 		BlockData block_data(s00);
+
+		cout << "BOXES" << endl;
+		DataPrinter::printBoxes(block_data);
+		cout << endl;
+
+		cout << "BLOCKS" << endl;
 		DataPrinter::printBlocks(block_data);
 		cout << endl;
 

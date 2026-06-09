@@ -12,14 +12,46 @@ using namespace metasolver;
 class DataPrinter {
 
 public:
-    static void printBlocks(const BlockData& block_data) {
-        const std::vector<float>& features = block_data.get_block_features();
+    static void printBoxes(const BlockData& block_data) {
+        const std::vector<float>& features = block_data.get_box_features();
 
-        for (size_t i = 0; i < features.size(); i += BlockData::N_BLOCK_FEATURES) {
-            for (int j = 0; j < BlockData::N_BLOCK_FEATURES; ++j) {
-                cout << features[i + j] << (j == BlockData::N_BLOCK_FEATURES - 1 ? "" : " ");
+        for (size_t i = 0; i < features.size(); i += BlockData::N_BOX_FEATURES) {
+            for (int j = 0; j < BlockData::N_BOX_FEATURES; ++j) {
+                cout << features[i + j] << (j == BlockData::N_BOX_FEATURES - 1 ? "" : " ");
             }
             cout << "\n";
+        }
+    }
+
+    static void printBlocks(const BlockData& block_data) {
+        const std::vector<float>& features = block_data.get_block_features();
+        const auto& boxes_map = block_data.get_block_to_boxes_info();
+        const std::vector<int>& index_to_id = block_data.get_block_index_to_id();
+    
+        int block_idx = 0; 
+    
+        // Recorremos las features de 4 en 4 (N_BLOCK_FEATURES)
+        for (size_t i = 0; i < features.size(); i += BlockData::N_BLOCK_FEATURES) {
+            
+            // 1. Imprimir las 4 características base
+            for (int j = 0; j < BlockData::N_BLOCK_FEATURES; ++j) {
+                cout << features[i + j] << " ";
+            }
+    
+            // 2. Obtener el ID del bloque usando el índice actual
+            int current_block_id = index_to_id[block_idx];
+    
+            // 3. Buscar las cajas en el mapa y imprimirlas
+            auto it = boxes_map.find(current_block_id);
+            if (it != boxes_map.end()) {
+                for (const auto& pair : it->second) {
+                    // pair.first es el ID correlativo de la caja, pair.second es la cantidad
+                    cout << pair.first << " " << pair.second << " ";
+                }
+            }
+    
+            cout << "\n";
+            block_idx++; // Pasamos al siguiente índice
         }
     }
 

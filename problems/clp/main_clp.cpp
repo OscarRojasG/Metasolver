@@ -72,6 +72,7 @@ int main(int argc, char** argv){
 	args::ValueFlag<double> _min_fr(parser, "double", "Minimum volume occupied by a block (proportion)", {"min_fr"});
 	args::ValueFlag<int> _maxtime(parser, "int", "Timelimit", {'t', "timelimit"});
 	args::ValueFlag<int> _w(parser, "int", "Beam width (nodes per level)", {'w'});
+	args::ValueFlag<int> _n(parser, "int", "Number of actions (verbose)", {'n'});
 	args::ValueFlag<int> _seed(parser, "int", "Random seed", {"seed"});
 	args::ValueFlag<double> _alpha(parser, "double", "Alpha parameter", {"alpha"});
 	args::ValueFlag<double> _beta(parser, "double", "Beta parameter", {"beta"});
@@ -115,6 +116,7 @@ int main(int argc, char** argv){
 	int inst=(_inst)? _inst.Get():0;
 	double min_fr=(_min_fr)? _min_fr.Get():0.98;
 	int w=(_w)? _w.Get():4;
+	int n=(_n)? _n.Get():w*w;
 	int maxtime=(_maxtime)? _maxtime.Get():100;
 
 	double alpha=4.0, beta=1.0, gamma=0.2, delta=1.0, p=0.04;
@@ -192,7 +194,7 @@ int main(int argc, char** argv){
 			bsg = new BSG(vcs, *gr, min(w, 4), 0.0, 0, _plot);
 			ss = new DoubleEffort(*bsg, w);
 		} else {
-			ss = new GRASP(vcs, *gr, w*w);
+			ss = new BSG(vcs, *gr, w, 0.0, 0, _plot);
 		}
 		eval = ss->run(s_copy);
 	}
@@ -217,7 +219,7 @@ int main(int argc, char** argv){
 		cout << endl;
 
 		cout << "SOLVE STEPS" << endl;
-		StateData state_data(block_data, s00, vcs, w*w);
+		StateData state_data(block_data, s00, vcs, n);
 
 		for(auto action:actions) {
 			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
@@ -238,7 +240,7 @@ int main(int argc, char** argv){
 			DataPrinter::printGreedy(state_data);
 
 			s00->transition(*action);
-			state_data = StateData(block_data, s00, vcs, w*w);
+			state_data = StateData(block_data, s00, vcs, n);
 			
 			cout << "Volume" << endl;
 			DataPrinter::printVolume(state_data);

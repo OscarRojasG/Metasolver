@@ -13,7 +13,7 @@ class BlockData {
         std::map<int, int> block_id_to_index;
         std::vector<int> block_index_to_id;
 
-        std::map<int, std::vector<std::pair<int, int>>> block_to_boxes_info;
+        std::vector<std::vector<std::pair<int, int>>> boxes_per_block;
     
     public:
         static const int N_BLOCK_FEATURES = 4;
@@ -63,7 +63,7 @@ class BlockData {
                 }
                 
                 // Asignamos la lista al mapa del bloque
-                block_to_boxes_info[block->id] = boxes_in_block;
+                boxes_per_block.push_back(boxes_in_block);
             
                 block_id_to_index[block->id] = block_count;
                 block_index_to_id.push_back(block->id);
@@ -72,8 +72,8 @@ class BlockData {
         }
     
         const std::vector<float>& get_block_features() const { return block_features; }
-        const std::map<int, std::vector<std::pair<int, int>>>& get_block_to_boxes_info() const { 
-            return block_to_boxes_info; 
+        const std::vector<std::vector<std::pair<int, int>>>& get_boxes_per_block() const { 
+            return boxes_per_block; 
         }
         const std::vector<float>& get_box_features() const { return box_features; }
         const std::map<int, int>& get_block_id_to_index() const { return block_id_to_index; }

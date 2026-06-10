@@ -25,7 +25,7 @@ public:
 
     static void printBlocks(const BlockData& block_data) {
         const std::vector<float>& features = block_data.get_block_features();
-        const auto& boxes_map = block_data.get_block_to_boxes_info();
+        const auto& boxes_per_block = block_data.get_boxes_per_block();
         const std::vector<int>& index_to_id = block_data.get_block_index_to_id();
     
         int block_idx = 0; 
@@ -38,16 +38,10 @@ public:
                 cout << features[i + j] << " ";
             }
     
-            // 2. Obtener el ID del bloque usando el índice actual
-            int current_block_id = index_to_id[block_idx];
-    
             // 3. Buscar las cajas en el mapa y imprimirlas
-            auto it = boxes_map.find(current_block_id);
-            if (it != boxes_map.end()) {
-                for (const auto& pair : it->second) {
-                    // pair.first es el ID correlativo de la caja, pair.second es la cantidad
-                    cout << pair.first << " " << pair.second << " ";
-                }
+            std::vector<std::pair<int, int>> boxes = boxes_per_block[block_idx];
+            for (auto it = boxes.begin(); it != boxes.end(); it++) {
+                cout << it->first << " " << it->second << " ";
             }
     
             cout << "\n";

@@ -23,6 +23,7 @@
 #include "data/block_data.h"
 #include "data/state_data.h"
 #include "MCTS_RolloutStrategy.h"
+#include "GuidedRolloutStrategy.h"
 
 using namespace std;
 
@@ -193,70 +194,91 @@ int main(int argc, char** argv){
 			bsg = new BSG(vcs, *gr, min(w, 4), 0.0, 0, _plot);
 			ss = new DoubleEffort(*bsg, w);
 		} else {
-			ss = new MCTS_RolloutStrategy(vcs, w*w, 10);
+			ss = new MCTS_RolloutStrategy(vcs, w*w, 2);
 		}
 		eval = ss->run(s_copy);
 	}
 	double time = ss->get_time();
 
-	list<const Action*>& actions= dynamic_cast<const clpState*>(ss->get_best_state())->get_path();
+	auto mcts = dynamic_cast<MCTS_RolloutStrategy*> (ss);
+	const clpState* best_state = dynamic_cast<const clpState*> (mcts->mcts_best_state);
+	list<const Action*>& actions = best_state->get_path();
 	cout << "path length" << endl;
 	cout << actions.size() << endl;
 
     cout << "% volume utilization" << endl;
-	cout << eval*100 << endl;
+	cout << best_state->get_value()*100 << endl;
 
 	cout << "total time" << endl;
 	cout << time << endl;
 
 	clpState* s00 = dynamic_cast<clpState*> (s0->clone());
-	auto mcts = dynamic_cast<MCTS_RolloutStrategy*> (ss);
 	std::vector<std::vector<double>> rollout_history = mcts->get_rollout_history();
+
+	GuidedRolloutStrategy* grs = new GuidedRolloutStrategy(vcs, w*w, 2);
+
 	int i = 0;
 
-  	if (_verbose || _verbose2) {
-		BlockData block_data(s00);
+	if (_verbose || _verbose2) {
+        BlockData block_data(s00);
 
-		cout << "BOXES" << endl;
-		DataPrinter::printBoxes(block_data);
-		cout << endl;
+        cout << "BOXES" << endl;
+        DataPrinter::printBoxes(block_data);
+        cout << endl;
 
-		cout << "BLOCKS" << endl;
-		DataPrinter::printBlocks(block_data);
-		cout << endl;
+        cout << "BLOCKS" << endl;
+        DataPrinter::printBlocks(block_data);
+        cout << endl;
 
-		cout << "SOLVE STEPS" << endl;
-		StateData state_data(block_data, s00, vcs, w*w);
+        cout << "SOLVE STEPS" << endl;
+        StateData state_data(block_data, s00, vcs, w*w);
 
-		for(auto action:actions) {
-			const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
+        for(auto action:actions) {
+            const clpAction* clp_action = dynamic_cast<const clpAction*> (action);
 
-			cout << "Actions" << endl;
-			DataPrinter::printActions(state_data);
+            cout << "Actions" << endl;
+            DataPrinter::printActions(state_data);
 
-			cout << "Placed" << endl;
-			DataPrinter::printPlaced(state_data);
+            cout << "Placed" << endl;
+            DataPrinter::printPlaced(state_data);
 
-			cout << "Space" << endl;
-			DataPrinter::printSpace(state_data);
+            cout << "Space" << endl;
+            DataPrinter::printSpace(state_data);
 
-			cout << "Selected Block" << endl;
-			DataPrinter::printBlockIndex(block_data, clp_action->block.id);
+            cout << "Selected Block" << endl;
+            DataPrinter::printBlockIndex(block_data, clp_action->block.id);
 
-			cout << "Greedy" << endl;
-			std::vector<double> rollout_values = rollout_history[i];
-			for (int j = 0; j < rollout_values.size(); j++) {
-				cout << rollout_values[j] << endl;
-			}
+            cout << "Greedy" << endl;
+            
+            // Obtener acciones hijas disponibles
+			std::multimap<double, metasolver::Action *> child_actions = state_data.get_ranked_actions(state_data.state, state_data.vcs, state_data.num_actions);
+            std::vector<double> child_rollout_values;
 
-			s00->transition(*action);
-			state_data = StateData(block_data, s00, vcs, w*w);
-			i += 1;
-			
-			cout << "Volume" << endl;
-			DataPrinter::printVolume(state_data);
+            // Para cada acción hija, ejecutar rollouts aleatorios
+            for (auto it = child_actions.rbegin(); it != child_actions.rend(); it++) {
+                State* child_state = s00->clone();
+                child_state->transition(*it->second);
+                
+                // Ejecutar rollouts aleatorios desde este estado hijo
+                double avg_value = grs->perform_rollout(*child_state);
+                child_rollout_values.push_back(avg_value);
+                
+                delete child_state;
+            }
 
-			cout << endl;
-		}
-	}
+            // Imprimir valores de rollouts para cada acción hija
+            for (double val : child_rollout_values) {
+                cout << val << endl;
+            }
+
+            s00->transition(*action);
+            state_data = StateData(block_data, s00, vcs, w*w);
+            i += 1;
+            
+            cout << "Volume" << endl;
+            DataPrinter::printVolume(state_data);
+
+            cout << endl;
+        }
+    }
 }

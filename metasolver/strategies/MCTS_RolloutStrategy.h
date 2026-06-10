@@ -20,7 +20,7 @@ public:
      * @param num_rollouts Cantidad 'N' de simulaciones completamente aleatorias por cada hijo.
      */
     MCTS_RolloutStrategy(ActionEvaluator* evl, int w, int num_rollouts) 
-        : SearchStrategy(evl), w(w), num_rollouts(num_rollouts) {}
+        : SearchStrategy(evl), w(w), num_rollouts(num_rollouts), mcts_best_state(nullptr) {}
 
     virtual ~MCTS_RolloutStrategy() = default;
 
@@ -44,11 +44,15 @@ public:
     }
 
     std::vector<std::vector<double>> get_rollout_history() const;
+    std::vector<std::vector<double>> get_rollout_std_history() const;
+
+    State *mcts_best_state;
 
 private:
     int w;
     int num_rollouts; // Parámetro 'N'
     std::vector<std::vector<double>> rollout_history;
+    std::vector<std::vector<double>> rollout_std_history;
 };
 
 } /* namespace metasolver */

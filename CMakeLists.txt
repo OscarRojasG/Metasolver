@@ -49,6 +49,7 @@ metasolver/strategies/BSG.cpp
 metasolver/strategies/Greedy.cpp
 metasolver/strategies/GRASP.cpp
 metasolver/strategies/MCTS_RolloutStrategy.cpp
+metasolver/strategies/GuidedRolloutStrategy.cpp
 metasolver/State.cpp
 )
 

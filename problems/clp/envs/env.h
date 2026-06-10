@@ -45,6 +45,14 @@ public:
         return block_data->get_block_features();
     }
 
+    std::vector<float> get_box_data() {
+        return block_data->get_box_features();
+    }
+
+    std::vector<std::vector<std::pair<int, int>>> get_boxes_per_block() {
+        return block_data->get_boxes_per_block();
+    }
+
     double get_path_length() {
         return best_state->get_path().size();
     }

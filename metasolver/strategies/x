@@ -112,10 +112,6 @@ list<State*> MCTS_RolloutStrategy::next(list<State*>& S) {
             double delta2 = val - mean;
             M2 += delta * delta2;
 
-            if (mcts_best_state == nullptr || val > mcts_best_state->get_value()) {
-                delete mcts_best_state;           
-                mcts_best_state = rollout_state->clone();
-            }
             delete rollout_state;
         }
 

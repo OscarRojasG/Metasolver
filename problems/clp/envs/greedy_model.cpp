@@ -65,6 +65,8 @@ void register_greedy_model(py::module &m) {
         .def_readwrite("w", &GreedyModel::w)
 
         .def("get_block_data", &ENV::get_block_data)
+        .def("get_box_data", &ENV::get_box_data)
+        .def("get_boxes_per_block", &ENV::get_boxes_per_block)
         .def("get_action_data", &GreedyModel::get_action_data)
         .def("get_pblock_data", &GreedyModel::get_pblock_data)
         .def("get_space_data", &GreedyModel::get_space_data)

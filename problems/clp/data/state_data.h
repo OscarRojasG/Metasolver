@@ -16,26 +16,6 @@ class StateData {
         std::vector<float> placed_features;
         std::vector<float> space_features;
         double volume_ratio;
-
-        std::multimap<double, Action*> get_ranked_actions(clpState* state, VCS_Function* vcs, int num_actions) {       
-            std::list<Action*> actions;
-            state->get_actions(actions);
-            
-            std::multimap<double, Action*> ranked_actions;
-            for (auto a : actions) {
-                double eval = vcs->eval_action(*state, *a);
-                if (eval > 0 && (ranked_actions.size() < num_actions || ranked_actions.begin()->first < eval)) {
-                    ranked_actions.insert({eval, a});
-                    if (ranked_actions.size() > num_actions) {
-                        delete ranked_actions.begin()->second;
-                        ranked_actions.erase(ranked_actions.begin());
-                    }
-                } else { 
-                    delete a;
-                }
-            }
-            return ranked_actions;
-        }
     
         void compute_action_features(clpState* state, VCS_Function* vcs, const std::map<int, int>& id_to_idx, int num_actions) {
             std::multimap<double, Action*> ranked_actions = get_ranked_actions(state, vcs, num_actions);
@@ -153,6 +133,26 @@ class StateData {
             }
 
             return greedy_values;
+        }
+
+        std::multimap<double, Action*> get_ranked_actions(clpState* state, VCS_Function* vcs, int num_actions) {       
+            std::list<Action*> actions;
+            state->get_actions(actions);
+            
+            std::multimap<double, Action*> ranked_actions;
+            for (auto a : actions) {
+                double eval = vcs->eval_action(*state, *a);
+                if (eval > 0 && (ranked_actions.size() < num_actions || ranked_actions.begin()->first < eval)) {
+                    ranked_actions.insert({eval, a});
+                    if (ranked_actions.size() > num_actions) {
+                        delete ranked_actions.begin()->second;
+                        ranked_actions.erase(ranked_actions.begin());
+                    }
+                } else { 
+                    delete a;
+                }
+            }
+            return ranked_actions;
         }
     };
 

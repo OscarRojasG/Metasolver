@@ -2,33 +2,97 @@
 
 namespace py = pybind11;
 
-BSM_GM::BSM_GM(std::string filename, int instance_number, int w, double min_fr) : BSM_ENV(filename, instance_number, w) {}
+BSM_GM::BSM_GM(clpState* s0, int w, double timelimit, std::chrono::steady_clock::time_point start_time) : 
+    ENV(s0, 999999.9, std::chrono::steady_clock::now()) {
+    this->w = w;
 
-BSM_GM::BSM_GM(clpState* s0, int w, double timelimit, std::chrono::steady_clock::time_point start_time) : BSM_ENV(s0, w, timelimit, start_time) {}
+    clp::clpState* root_copy = dynamic_cast<clp::clpState*>(s0->clone());
+    current_states.push_back(root_copy);
+    update_batch_expand();
+}
 
-void BSM_GM::transition_bsm(std::vector<std::vector<int>> selected_indexes_lists) {
-    BSM_ENV::transition(selected_indexes_lists);
-    if (batch_items.size() == 0) {
-        for (State *s : current_nodes) delete s;
-        current_nodes.clear();
+BSM_GM::BSM_GM(std::string filename, int instance_number, int w, double min_fr) 
+    : BSM_GM(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w) {}
+
+BSM_GM::~BSM_GM() {}
+
+void BSM_GM::update_batch_expand() {
+    BatchData batch_data(*block_data, current_states, vcs, w*w);
+    action_data_expand = batch_data.get_batch_action_features();
+    placed_data_expand = batch_data.get_batch_placed_features();
+    space_data_expand = batch_data.get_batch_space_features();
+}
+
+void BSM_GM::update_batch_greedy() {
+    std::vector<clpState*> nodes;
+    nodes.reserve(succ_states.size());
+    for (auto& item : succ_states) nodes.push_back(item.second);
+
+    BatchData batch_data(*block_data, nodes, vcs, w*w);
+    action_data_greedy = batch_data.get_batch_action_features();
+    placed_data_greedy = batch_data.get_batch_placed_features();
+    space_data_greedy = batch_data.get_batch_space_features();
+}
+
+void BSM_GM::expand(std::vector<std::vector<int>> selected_indexes_lists) { 
+    int i = 0;
+
+    for (auto s : current_states) {
+        for (auto block_idx : selected_indexes_lists[i]) {
+            std::list<Action*> actions;
+            s->get_actions(actions);
+
+            int block_id = block_data->get_block_index_to_id().at(block_idx);
+
+            for (auto a : actions) {
+                clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
+                
+                if (ca && ca->block.id == block_id) {
+                    clpState* state_copy = dynamic_cast<clpState*>(s->clone());
+                    state_copy->transition(*a);
+
+                    list<Action*> child_actions;
+                    state_copy->get_actions(child_actions);
+                    
+                    if (child_actions.size() > 0) {
+                        succ_states.push_back({s, state_copy});
+                    } else {
+                        delete state_copy;
+                    }
+                    
+                    for (auto action_ptr : child_actions) delete action_ptr;
+                    break;
+                }
+            }
+
+            for (auto action_ptr : actions) delete action_ptr;
+        }
+        i++;
+    }
+
+    if (succ_states.size() == 0) {
+        for (State *s : current_states) delete s;
+        current_states.clear();
+    } else {
+        update_batch_greedy();
     }
 }
 
-void BSM_GM::transition_greedy(std::vector<int> selected_indexes) {
+void BSM_GM::greedy_step(std::vector<int> selected_indexes) {
     // 1. Aplicar transiciones
-    for (size_t n = 0; n < batch_items.size(); ++n) {
+    for (size_t n = 0; n < succ_states.size(); ++n) {
         int block_idx = selected_indexes[n];
         if (block_idx == -1) continue;
         
-        int block_id = block_index_to_id[block_idx];
+        int block_id = block_data->get_block_index_to_id()[block_idx];
 
         std::list<Action*> actions;
-        batch_items[n].current->get_actions(actions);
+        succ_states[n].second->get_actions(actions);
 
         for (auto a : actions) {
             clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
             if (ca && ca->block.id == block_id) {
-                batch_items[n].current->transition(*a);
+                succ_states[n].second->transition(*a);
                 break;
             }
         }
@@ -36,38 +100,37 @@ void BSM_GM::transition_greedy(std::vector<int> selected_indexes) {
     }
 
     // 2. Filtrar hojas y actualizar resultados
-    std::vector<BatchItem> remaining_items; // Para guardar los que no son hojas
+    std::vector<std::pair<clp::clpState *, clp::clpState *>> remaining_items; // Para guardar los que no son hojas
 
-    for (auto& item : batch_items) {
+    for (auto& item : succ_states) {
         std::list<Action*> next_actions;
-        item.current->get_actions(next_actions);
+        item.second->get_actions(next_actions);
 
         if (next_actions.empty()) {
-            double volume = item.current->get_value();
+            double volume = item.second->get_value();
             
             if (volume > best_volume && get_elapsed_time() <= timelimit) {
-                best_state = dynamic_cast<clpState*> (item.current->clone());
+                best_state = dynamic_cast<clpState*> (item.second->clone());
                 best_volume = volume;
             }
 
-            if (state_actions.find(-volume) == state_actions.end()) {
-                state_actions[-volume] = std::make_pair(item.original_node, item.current);
+            if (evals.find(-volume) == evals.end()) {
+                evals[-volume] = std::make_pair(item.first, item.second);
             } else {
-                delete item.current;
+                delete item.second;
             }
         } else {
             for (auto a : next_actions) delete a;
             remaining_items.push_back(item); 
         }
     }
-    // Al final, batch_items se actualiza con los que no fueron hojas
-    batch_items = std::move(remaining_items);
+    succ_states = std::move(remaining_items);
 
     // 3. Si todos son hojas, generar siguiente nivel
-    if (batch_items.empty()) {
-        std::list<State*> next_states = get_next_states(state_actions);
-        for (State *s : current_nodes) delete s;
-        current_nodes.clear();
+    if (succ_states.empty()) {
+        std::list<State*> next_states = EnvUtils::get_next_states(evals, w);
+        for (State *s : current_states) delete s;
+        current_states.clear();
 
         for (State *s : next_states)
         {
@@ -76,74 +139,51 @@ void BSM_GM::transition_greedy(std::vector<int> selected_indexes) {
             s_copy->get_actions(actions);
 
             if (actions.size() > 0 && get_elapsed_time() <= timelimit) {
-                current_nodes.push_back(dynamic_cast<clpState *>(s));
+                current_states.push_back(dynamic_cast<clpState *>(s));
             } else {
                 delete s;
             }
 
             for (auto a : actions) delete a;
         }
+        update_batch_expand();
+    } else {
+        update_batch_greedy();
     }
 }
 
-py::dict BSM_GM::get_batch_dict_bsm() {
-    return BSM_ENV::get_batch_dict();
-}
-
-py::dict BSM_GM::get_batch_dict_greedy() {
-    update_batches_greedy(); 
-    py::dict d;
-    d["act_blocks"] = action_blocks_gr;
-    d["act_feats"] = action_features_gr;
-    d["pl_blocks"] = placed_blocks_gr;
-    d["pl_feats"] = placed_features_gr;
-    d["sp_feats"] = space_features_gr;
-    d["biases"] = space_features_gr;
-    return d;
+bool BSM_GM::is_finished() {
+    bool finished = current_states.empty();
+    if (finished) final_time = get_elapsed_time();
+    return finished;
 }
 
 bool BSM_GM::is_greedy_finished() {
-    return batch_items.empty();
-}
-
-bool BSM_GM::is_bsm_finished() {
-    return BSM_ENV::is_finished();
-}
-
-// Helper para extraer los punteros 'current' de batch_items
-std::vector<clpState*> BSM_GM::get_greedy_nodes_vec() {
-    std::vector<clpState*> nodes;
-    nodes.reserve(batch_items.size());
-    for (auto& item : batch_items) nodes.push_back(item.current);
-    return nodes;
-}
-
-void BSM_GM::update_batches_greedy() {
-    std::vector<clp::clpState*> nodes = get_greedy_nodes_vec();
-
-    EnvUtilsPython::get_actions_data_batch(nodes, vcs, w, block_id_to_index, action_blocks_gr, action_features_gr, biases_gr);
-    EnvUtilsPython::get_placed_data_batch(nodes, block_id_to_index, placed_blocks_gr, placed_features_gr);
-    EnvUtilsPython::get_space_features_batch(nodes, space_features_gr);
+    return succ_states.empty();
 }
 
 void register_bsm_gm(py::module &m) {
-    py::class_<BSM_GM>(m, "BSM_GM")
+    py::class_<BSM_GM, ENV>(m, "BSM_GM")
         .def(py::init<std::string, int, int, double>(), 
-                py::arg("filename"), 
-                py::arg("instance_number"), 
-                py::arg("w"),
-                py::arg("min_fr"))
+             py::arg("filename"), 
+             py::arg("instance_number"),
+             py::arg("w"),
+             py::arg("min_fr"))
         .def_readwrite("best_volume", &BSM_GM::best_volume)
         .def_readwrite("final_time", &BSM_GM::final_time)
         .def_readwrite("w", &BSM_GM::w)
 
-        .def("get_block_features", &BSM_GM::get_block_features)
+        .def("get_block_data", &ENV::get_block_data)
+        .def("get_action_data_batch_expand", &BSM_GM::get_action_data_batch_expand)
+        .def("get_pblock_data_batch_expand", &BSM_GM::get_pblock_data_batch_expand)
+        .def("get_space_data_batch_expand", &BSM_GM::get_space_data_batch_expand)
 
-        .def("get_batch_dict_bsm", &BSM_GM::get_batch_dict_bsm)
-        .def("get_batch_dict_greedy", &BSM_GM::get_batch_dict_greedy)
+        .def("get_action_data_batch_greedy", &BSM_GM::get_action_data_batch_greedy)
+        .def("get_pblock_data_batch_greedy", &BSM_GM::get_pblock_data_batch_greedy)
+        .def("get_space_data_batch_greedy", &BSM_GM::get_space_data_batch_greedy)
 
-        .def("transition_bsm", &BSM_GM::transition_bsm, py::arg("selected_ids_lists"))
-        .def("transition_greedy", &BSM_GM::transition_greedy, py::arg("selected_ids"))
-        .def("is_bsm_finished", &BSM_GM::is_bsm_finished)
-        .def("is_greedy_finished", &BSM_GM::is_greedy_finished);
+        .def("expand", &BSM_GM::expand, py::arg("selected_indexes_lists"))
+        .def("greedy_step", &BSM_GM::greedy_step, py::arg("selected_indexes"))
+        .def("is_greedy_finished", &BSM_GM::is_greedy_finished)
+        .def("is_finished", &BSM_GM::is_finished);
 }

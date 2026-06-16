@@ -95,7 +95,7 @@ problems/clp/plugins/kdtree/BlockSet.cpp
 )
 
 pybind11_add_module(bsm_engine 
-    #problems/clp/envs/bsm_gm.cpp
+    problems/clp/envs/bsm_gm.cpp
     problems/clp/envs/bsm_vcs.cpp
     problems/clp/envs/greedy_model.cpp
     problems/clp/envs/value_predictor.cpp

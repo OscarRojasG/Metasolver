@@ -35,6 +35,7 @@ private:
     std::vector<std::pair<clpState *, clpState *>> succ_states;
     SearchStrategy *gr;
     bool completed = false;
+    int current_depth;
     
     // Mapeo necesario para la transición
     std::map<int, int> id_to_idx;

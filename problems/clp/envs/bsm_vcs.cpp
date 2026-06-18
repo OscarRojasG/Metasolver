@@ -15,16 +15,18 @@ BSM_VCS::BSM_VCS(clpState* s0, int w, int max_blocks, int max_actions, int max_p
     
     clp::clpState* root_copy = dynamic_cast<clp::clpState*>(s0->clone());
     current_states.push_back(root_copy);
+
+    this->current_depth = 1;
 }
 
 BSM_VCS::~BSM_VCS() { delete gr; }
 
 py::tuple BSM_VCS::get_enc_data() {
-    return TensorEncoder::get_enc_data(current_states[0], max_blocks, id_to_idx);
+    return TensorEncoder::get_enc_data(current_states[0], id_to_idx);
 }
 
 py::tuple BSM_VCS::get_dec_data_batch() {
-    return TensorEncoder::get_dec_data_batch(current_states, vcs, id_to_idx, max_actions, max_pblocks);
+    return TensorEncoder::get_dec_data_batch(current_states, vcs, id_to_idx, max_actions, current_depth);
 }
 
 void BSM_VCS::transition(const std::vector<std::vector<int>>& selected_indexes_lists) { 
@@ -90,6 +92,7 @@ void BSM_VCS::transition(const std::vector<std::vector<int>>& selected_indexes_l
     }
 
     succ_states.clear();
+    current_depth++;
 }
 
 std::map<double, std::pair<State *, State *>> BSM_VCS::eval_succ_states() {

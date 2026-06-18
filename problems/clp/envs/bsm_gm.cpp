@@ -8,6 +8,9 @@ BSM_GM::BSM_GM(clpState* s0, int w, int max_blocks, int max_actions, int max_pbl
 
     clp::clpState* root_copy = dynamic_cast<clp::clpState*>(s0->clone());
     current_states.push_back(root_copy);
+
+    current_depth_expand = 1;
+    current_depth_greedy = 1;
 }
 
 BSM_GM::BSM_GM(std::string filename, int instance_number, int w, int max_blocks, int max_actions, int max_pblocks, double min_fr) 
@@ -16,11 +19,11 @@ BSM_GM::BSM_GM(std::string filename, int instance_number, int w, int max_blocks,
 BSM_GM::~BSM_GM() {}
 
 py::tuple BSM_GM::get_enc_data() {
-    return TensorEncoder::get_enc_data(current_states[0], max_blocks, id_to_idx);
+    return TensorEncoder::get_enc_data(current_states[0], id_to_idx);
 }
 
 py::tuple BSM_GM::get_dec_data_batch_expand() {
-    return TensorEncoder::get_dec_data_batch(current_states, vcs, id_to_idx, max_actions, max_pblocks);
+    return TensorEncoder::get_dec_data_batch(current_states, vcs, id_to_idx, max_actions, current_depth_expand);
 }
 
 py::tuple BSM_GM::get_dec_data_batch_greedy() {
@@ -30,7 +33,7 @@ py::tuple BSM_GM::get_dec_data_batch_greedy() {
     for (auto& item : succ_states) {
         nodes.push_back(item.second);
     }
-    return TensorEncoder::get_dec_data_batch(nodes, vcs, id_to_idx, max_actions, max_pblocks);
+    return TensorEncoder::get_dec_data_batch(nodes, vcs, id_to_idx, max_actions, current_depth_greedy);
 }
 
 void BSM_GM::expand(std::vector<std::vector<int>> selected_indexes_lists) { 
@@ -78,6 +81,8 @@ void BSM_GM::expand(std::vector<std::vector<int>> selected_indexes_lists) {
     if (succ_states.size() == 0) {
         for (State *s : current_states) delete s;
         current_states.clear();
+    } else {
+        current_depth_greedy = current_depth_expand + 1;
     }
 }
 
@@ -154,7 +159,11 @@ void BSM_GM::greedy_step(std::vector<int> selected_indexes) {
 
             for (auto a : actions) delete a;
         }
-    } 
+        current_depth_expand++;
+        
+    } else {
+        current_depth_greedy++;
+    }
 }
 
 bool BSM_GM::is_finished() {

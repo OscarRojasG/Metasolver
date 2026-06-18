@@ -41,6 +41,8 @@ private:
     
     // Mapeo necesario para TensorEncoder y las transiciones
     std::map<int, int> id_to_idx;
+    int current_depth_expand;
+    int current_depth_greedy;
 
     bool completed = false;
 };

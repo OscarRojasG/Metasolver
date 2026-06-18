@@ -15,9 +15,7 @@ namespace py = pybind11;
 
 namespace TensorEncoder {
 
-    inline void populate_blocks(clpState* state, int max_blocks, float* ptr, std::map<int, int>* out_id_to_idx) {
-        std::fill(ptr, ptr + (max_blocks * 5), -1.0f);
-
+    inline void populate_blocks(clpState* state, float* ptr, std::map<int, int>* out_id_to_idx) {
         float cL = static_cast<float>(state->cont->getL());
         float cW = static_cast<float>(state->cont->getW());
         float cH = static_cast<float>(state->cont->getH());
@@ -27,8 +25,6 @@ namespace TensorEncoder {
         if (out_id_to_idx) out_id_to_idx->clear(); 
 
         for (const auto* block : state->valid_blocks) {
-            if (count >= max_blocks) break;
-
             float l = static_cast<float>(block->getL()) / md;
             float w = static_cast<float>(block->getW()) / md;
             float h = static_cast<float>(block->getH()) / md;
@@ -276,9 +272,16 @@ namespace TensorEncoder {
     }
 
     // 2.1 Encoder: Single State
-    inline py::tuple get_enc_data(clpState* state, int max_blocks, std::map<int, int>& out_id_to_idx) {
-        py::array_t<float> block_features({max_blocks, 5});
-        populate_blocks(state, max_blocks, static_cast<float*>(block_features.request().ptr), &out_id_to_idx);
+    inline py::tuple get_enc_data(clpState* state, std::map<int, int>& out_id_to_idx) {
+        // 1. Obtenemos el tamaño dinámico real
+        int num_blocks = state->valid_blocks.size();
+        
+        // 2. Instanciamos el tensor con el tamaño exacto
+        py::array_t<float> block_features({num_blocks, 5});
+        
+        // 3. Poblamos los datos directamente
+        populate_blocks(state, static_cast<float*>(block_features.request().ptr), &out_id_to_idx);
+        
         return py::make_tuple(block_features);
     }
 

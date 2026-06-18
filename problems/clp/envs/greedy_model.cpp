@@ -18,7 +18,7 @@ w, max_blocks, max_actions, max_pblocks) {}
 
 py::tuple GreedyModel::get_enc_data() {
     // La interfaz del encoder es directa
-    return TensorEncoder::get_enc_data(current_node, max_blocks, id_to_idx);
+    return TensorEncoder::get_enc_data(current_node, id_to_idx);
 }
 
 py::tuple GreedyModel::get_dec_data() {

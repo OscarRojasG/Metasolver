@@ -163,7 +163,7 @@ bool BSM_GM::is_greedy_finished() {
 }
 
 void register_bsm_gm(py::module &m) {
-    py::class_<BSM_GM, ENV>(m, "BSM_GM")
+    py::class_<BSM_GM, ENV>(m, "BSM_GM", py::module_local())
         .def(py::init<std::string, int, int, double>(), 
              py::arg("filename"), 
              py::arg("instance_number"),

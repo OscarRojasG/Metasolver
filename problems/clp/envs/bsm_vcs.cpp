@@ -116,7 +116,7 @@ bool BSM_VCS::is_finished() {
 }
 
 void register_bsm_vcs(py::module &m) {
-    py::class_<BSM_VCS, ENV>(m, "BSM_VCS")
+    py::class_<BSM_VCS, ENV>(m, "BSM_VCS", py::module_local())
         .def(py::init<std::string, int, int, double>(), 
              py::arg("filename"), 
              py::arg("instance_number"),

@@ -54,7 +54,7 @@ void GreedyModel::update() {
 }
 
 void register_greedy_model(py::module &m) {
-    py::class_<GreedyModel, ENV>(m, "GreedyModel")
+    py::class_<GreedyModel, ENV>(m, "GreedyModel", py::module_local())
         .def(py::init<std::string, int, int, double>(), 
                 py::arg("filename"), 
                 py::arg("instance_number"),

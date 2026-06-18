@@ -2,47 +2,52 @@
 
 namespace py = pybind11;
 
-BSM_GM::BSM_GM(clpState* s0, int w, double timelimit, std::chrono::steady_clock::time_point start_time) : 
-    ENV(s0, 999999.9, std::chrono::steady_clock::now()) {
-    this->w = w;
+BSM_GM::BSM_GM(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks, double timelimit, std::chrono::steady_clock::time_point start_time) : 
+    ENV(s0, 999999.9, std::chrono::steady_clock::now()), 
+    w(w), max_blocks(max_blocks), max_actions(max_actions), max_pblocks(max_pblocks) {
 
     clp::clpState* root_copy = dynamic_cast<clp::clpState*>(s0->clone());
     current_states.push_back(root_copy);
-    update_batch_expand();
 }
 
-BSM_GM::BSM_GM(std::string filename, int instance_number, int w, double min_fr) 
-    : BSM_GM(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w) {}
+BSM_GM::BSM_GM(std::string filename, int instance_number, int w, int max_blocks, int max_actions, int max_pblocks, double min_fr) 
+    : BSM_GM(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w, max_blocks, max_actions, max_pblocks) {}
 
 BSM_GM::~BSM_GM() {}
 
-void BSM_GM::update_batch_expand() {
-    BatchData batch_data(*block_data, current_states, vcs, w*w);
-    action_data_expand = batch_data.get_batch_action_features();
-    placed_data_expand = batch_data.get_batch_placed_features();
-    space_data_expand = batch_data.get_batch_space_features();
+py::tuple BSM_GM::get_enc_data() {
+    return TensorEncoder::get_enc_data(current_states[0], max_blocks, id_to_idx);
 }
 
-void BSM_GM::update_batch_greedy() {
+py::tuple BSM_GM::get_dec_data_batch_expand() {
+    return TensorEncoder::get_dec_data_batch(current_states, vcs, id_to_idx, max_actions, max_pblocks);
+}
+
+py::tuple BSM_GM::get_dec_data_batch_greedy() {
+    // Extraemos solo los estados "hijos" para la evaluación greedy
     std::vector<clpState*> nodes;
     nodes.reserve(succ_states.size());
-    for (auto& item : succ_states) nodes.push_back(item.second);
-
-    BatchData batch_data(*block_data, nodes, vcs, w*w);
-    action_data_greedy = batch_data.get_batch_action_features();
-    placed_data_greedy = batch_data.get_batch_placed_features();
-    space_data_greedy = batch_data.get_batch_space_features();
+    for (auto& item : succ_states) {
+        nodes.push_back(item.second);
+    }
+    return TensorEncoder::get_dec_data_batch(nodes, vcs, id_to_idx, max_actions, max_pblocks);
 }
 
 void BSM_GM::expand(std::vector<std::vector<int>> selected_indexes_lists) { 
     int i = 0;
+
+    // Crear mapa inverso para traducir índices del tensor a IDs del simulador
+    std::map<int, int> idx_to_id;
+    for (const auto& pair : id_to_idx) {
+        idx_to_id[pair.second] = pair.first;
+    }
 
     for (auto s : current_states) {
         for (auto block_idx : selected_indexes_lists[i]) {
             std::list<Action*> actions;
             s->get_actions(actions);
 
-            int block_id = block_data->get_block_index_to_id().at(block_idx);
+            int block_id = idx_to_id.at(block_idx);
 
             for (auto a : actions) {
                 clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
@@ -73,18 +78,21 @@ void BSM_GM::expand(std::vector<std::vector<int>> selected_indexes_lists) {
     if (succ_states.size() == 0) {
         for (State *s : current_states) delete s;
         current_states.clear();
-    } else {
-        update_batch_greedy();
     }
 }
 
 void BSM_GM::greedy_step(std::vector<int> selected_indexes) {
+    std::map<int, int> idx_to_id;
+    for (const auto& pair : id_to_idx) {
+        idx_to_id[pair.second] = pair.first;
+    }
+
     // 1. Aplicar transiciones
     for (size_t n = 0; n < succ_states.size(); ++n) {
         int block_idx = selected_indexes[n];
         if (block_idx == -1) continue;
         
-        int block_id = block_data->get_block_index_to_id()[block_idx];
+        int block_id = idx_to_id.at(block_idx);
 
         std::list<Action*> actions;
         succ_states[n].second->get_actions(actions);
@@ -100,7 +108,7 @@ void BSM_GM::greedy_step(std::vector<int> selected_indexes) {
     }
 
     // 2. Filtrar hojas y actualizar resultados
-    std::vector<std::pair<clp::clpState *, clp::clpState *>> remaining_items; // Para guardar los que no son hojas
+    std::vector<std::pair<clp::clpState *, clp::clpState *>> remaining_items;
 
     for (auto& item : succ_states) {
         std::list<Action*> next_actions;
@@ -146,10 +154,7 @@ void BSM_GM::greedy_step(std::vector<int> selected_indexes) {
 
             for (auto a : actions) delete a;
         }
-        update_batch_expand();
-    } else {
-        update_batch_greedy();
-    }
+    } 
 }
 
 bool BSM_GM::is_finished() {
@@ -163,24 +168,20 @@ bool BSM_GM::is_greedy_finished() {
 }
 
 void register_bsm_gm(py::module &m) {
-    py::class_<BSM_GM, ENV>(m, "BSM_GM")
-        .def(py::init<std::string, int, int, double>(), 
-             py::arg("filename"), 
-             py::arg("instance_number"),
-             py::arg("w"),
-             py::arg("min_fr"))
+    py::class_<BSM_GM, ENV>(m, "BSM_GM", py::module_local())
+        .def(py::init<std::string, int, int, int, int, int, double>(), 
+             py::arg("filename"), py::arg("instance_number"), py::arg("w"),
+             py::arg("max_blocks"), py::arg("max_actions"), py::arg("max_pblocks"), py::arg("min_fr"))
         .def_readwrite("best_volume", &BSM_GM::best_volume)
         .def_readwrite("final_time", &BSM_GM::final_time)
         .def_readwrite("w", &BSM_GM::w)
 
         .def("get_block_data", &ENV::get_block_data)
-        .def("get_action_data_batch_expand", &BSM_GM::get_action_data_batch_expand)
-        .def("get_pblock_data_batch_expand", &BSM_GM::get_pblock_data_batch_expand)
-        .def("get_space_data_batch_expand", &BSM_GM::get_space_data_batch_expand)
-
-        .def("get_action_data_batch_greedy", &BSM_GM::get_action_data_batch_greedy)
-        .def("get_pblock_data_batch_greedy", &BSM_GM::get_pblock_data_batch_greedy)
-        .def("get_space_data_batch_greedy", &BSM_GM::get_space_data_batch_greedy)
+        
+        // Nuevas funciones
+        .def("get_enc_data", &BSM_GM::get_enc_data)
+        .def("get_dec_data_batch_expand", &BSM_GM::get_dec_data_batch_expand)
+        .def("get_dec_data_batch_greedy", &BSM_GM::get_dec_data_batch_greedy)
 
         .def("expand", &BSM_GM::expand, py::arg("selected_indexes_lists"))
         .def("greedy_step", &BSM_GM::greedy_step, py::arg("selected_indexes"))

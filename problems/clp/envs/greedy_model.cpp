@@ -2,23 +2,43 @@
 
 namespace py = pybind11;
 
-GreedyModel::GreedyModel(clpState* s0, int w) : ENV(s0, 999999.9, std::chrono::steady_clock::now()) {
+GreedyModel::GreedyModel(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks) 
+    : ENV(s0, 999999.9, std::chrono::steady_clock::now()), 
+      max_blocks(max_blocks), max_actions(max_actions), max_pblocks(max_pblocks) {
+    
     current_node = dynamic_cast<clp::clpState*>(s0->clone());
-
     volume = 0.0;
     this->w = w;
-
-    update();
 }
 
-GreedyModel::GreedyModel(std::string filename, int instance_number, int w, double min_fr) 
-    : GreedyModel(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w) {}
+GreedyModel::GreedyModel(std::string filename, int instance_number, int w, 
+    int max_blocks, int max_actions, int max_pblocks, double min_fr) 
+: GreedyModel(new_state(filename, instance_number, min_fr, 10000, clpState::BR), 
+w, max_blocks, max_actions, max_pblocks) {}
+
+py::tuple GreedyModel::get_enc_data() {
+    // La interfaz del encoder es directa
+    return TensorEncoder::get_enc_data(current_node, max_blocks, id_to_idx);
+}
+
+py::tuple GreedyModel::get_dec_data() {
+    // Delegamos la creación de los 3 tensores al encoder
+    return TensorEncoder::get_dec_data(current_node, vcs, id_to_idx, max_actions, max_pblocks);
+}
 
 void GreedyModel::transition(int selected_index) {
     std::list<Action*> actions;
     current_node->get_actions(actions);
 
-    int block_id = block_data->get_block_index_to_id().at(selected_index);
+    // Como bloqueamos la creación de BlockData, ahora usamos la lista de bloques válidos directamente.
+    // selected_index es la posición en el tensor, por lo que iteramos para encontrar el ID real.
+    int block_id = -1;
+    for (const auto& pair : id_to_idx) {
+        if (pair.second == selected_index) {
+            block_id = pair.first;
+            break;
+        }
+    }
 
     for (auto a : actions) {
         clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
@@ -28,17 +48,14 @@ void GreedyModel::transition(int selected_index) {
             volume = current_node->get_value();
             best_state = current_node;
 
-            list<Action*> child_actions;
+            std::list<Action*> child_actions;
             current_node->get_actions(child_actions);
             
             if (child_actions.size() == 0) {
                 final_time = get_elapsed_time();
                 completed = true;
-            } else {
-                update();
             }
             
-            // Liberar la lista de acciones para evitar memory leaks
             for (auto action_ptr : actions) delete action_ptr;
             for (auto action_ptr : child_actions) delete action_ptr;
             break;
@@ -46,29 +63,28 @@ void GreedyModel::transition(int selected_index) {
     }
 }
 
-void GreedyModel::update() {
-    StateData state_data(*block_data, current_node, vcs, w*w);
-    action_data = state_data.get_action_features();
-    placed_data = state_data.get_placed_features();
-    space_data = state_data.get_space_features();
-}
-
 void register_greedy_model(py::module &m) {
-    py::class_<GreedyModel, ENV>(m, "GreedyModel")
-        .def(py::init<std::string, int, int, double>(), 
+    py::class_<GreedyModel, ENV>(m, "GreedyModel", py::module_local())
+        // 1. Constructor actualizado con los límites de los tensores
+        .def(py::init<std::string, int, int, int, int, int, double>(), 
                 py::arg("filename"), 
                 py::arg("instance_number"),
                 py::arg("w"),
+                py::arg("max_blocks"),
+                py::arg("max_actions"),
+                py::arg("max_pblocks"),
                 py::arg("min_fr"))
+        
+        // Atributos públicos
         .def_readwrite("volume", &GreedyModel::volume)
         .def_readwrite("final_time", &GreedyModel::final_time)
         .def_readwrite("w", &GreedyModel::w)
 
-        .def("get_block_data", &ENV::get_block_data)
-        .def("get_action_data", &GreedyModel::get_action_data)
-        .def("get_pblock_data", &GreedyModel::get_pblock_data)
-        .def("get_space_data", &GreedyModel::get_space_data)
+        // 2. --- NUEVOS MÉTODOS CERO-COPIAS ---
+        .def("get_enc_data", &GreedyModel::get_enc_data)
+        .def("get_dec_data", &GreedyModel::get_dec_data)
 
+        // Métodos de control
         .def("transition", &GreedyModel::transition, py::arg("selected_index"))
         .def("is_finished", &GreedyModel::is_finished)
 

@@ -3,16 +3,11 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/numpy.h>
 #include <string>
-#include <vector>
 #include <map>
 #include "clpState.h"
-#include "BSG.h"
-#include "Greedy.h"
-#include "VCS_Function.h"
-#include "data/state_data.h"
 #include "envs/env.h"
+#include "data/tensor_encoder.h" // Tu nuevo orquestador de tensores
 
 namespace py = pybind11;
 
@@ -20,31 +15,32 @@ class GreedyModel : public ENV {
 public:
     int w;
     double volume;
+    
+    // Agregamos los límites para los tensores
+    int max_blocks;
+    int max_actions;
+    int max_pblocks;
 
-    GreedyModel(std::string filename, int instance_number, int w, double min_fr=1);
+    // Constructores actualizados para recibir los límites
+    GreedyModel(std::string filename, int instance_number, int w, 
+                int max_blocks, int max_actions, int max_pblocks, double min_fr=1.0);
 
-    GreedyModel(clpState* s0, int w);
+    GreedyModel(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks);
 
     void transition(int selected_index);
 
-    const std::vector<float> get_action_data() const { return action_data; }
-
-    const std::vector<float> get_pblock_data() const { return placed_data; }
-
-    const std::vector<float> get_space_data() const { return space_data; }
-
     const bool is_finished() const { return completed; }
+
+    // --- NUEVA INTERFAZ DIRECTA ---
+    py::tuple get_enc_data();
+    py::tuple get_dec_data();
 
 private:
     clpState* current_node;
-
-    std::vector<float> action_data;
-    std::vector<float> placed_data;
-    std::vector<float> space_data;
-
     bool completed = false;
 
-    void update();
+    // Vital para conectar el codificador de bloques con el de acciones
+    std::map<int, int> id_to_idx; 
 };
 
 #endif

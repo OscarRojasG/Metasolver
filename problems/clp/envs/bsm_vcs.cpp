@@ -2,32 +2,45 @@
 
 namespace py = pybind11;
 
-BSM_VCS::BSM_VCS(clpState* s0, int w, double timelimit, std::chrono::steady_clock::time_point start_time) : 
-    ENV(s0, 999999.9, std::chrono::steady_clock::now()) {
-    this->gr = new Greedy(vcs);
-    this->w = w;
+BSM_VCS::BSM_VCS(std::string filename, int instance_number, int w, 
+                 int max_blocks, int max_actions, int max_pblocks, double min_fr) 
+    : BSM_VCS(new_state(filename, instance_number, min_fr, 10000, clpState::BR), 
+              w, max_blocks, max_actions, max_pblocks) {}
 
+BSM_VCS::BSM_VCS(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks, double timelimit) 
+    : ENV(s0, timelimit, std::chrono::steady_clock::now()), 
+      max_blocks(max_blocks), max_actions(max_actions), max_pblocks(max_pblocks), w(w) {
+    
+    this->gr = new Greedy(vcs);
+    
     clp::clpState* root_copy = dynamic_cast<clp::clpState*>(s0->clone());
     current_states.push_back(root_copy);
-    update();
 }
 
-BSM_VCS::BSM_VCS(std::string filename, int instance_number, int w, double min_fr) 
-    : BSM_VCS(new_state(filename, instance_number, min_fr, 10000, clpState::BR), w) {}
+BSM_VCS::~BSM_VCS() { delete gr; }
 
-BSM_VCS::~BSM_VCS() {
-    delete gr;
+py::tuple BSM_VCS::get_enc_data() {
+    return TensorEncoder::get_enc_data(current_states[0], max_blocks, id_to_idx);
 }
 
-void BSM_VCS::transition(std::vector<std::vector<int>> selected_indexes_lists) { 
+py::tuple BSM_VCS::get_dec_data_batch() {
+    return TensorEncoder::get_dec_data_batch(current_states, vcs, id_to_idx, max_actions, max_pblocks);
+}
+
+void BSM_VCS::transition(const std::vector<std::vector<int>>& selected_indexes_lists) { 
     int i = 0;
+    
+    std::map<int, int> idx_to_id;
+    for (const auto& pair : id_to_idx) {
+        idx_to_id[pair.second] = pair.first;
+    }
 
     for (auto s : current_states) {
         for (auto block_idx : selected_indexes_lists[i]) {
             std::list<Action*> actions;
             s->get_actions(actions);
 
-            int block_id = block_data->get_block_index_to_id().at(block_idx);
+            int block_id = idx_to_id.at(block_idx);
 
             for (auto a : actions) {
                 clp::clpAction* ca = dynamic_cast<clp::clpAction*>(a);
@@ -76,7 +89,6 @@ void BSM_VCS::transition(std::vector<std::vector<int>> selected_indexes_lists) {
         for (auto a : actions) delete a;
     }
 
-    update();
     succ_states.clear();
 }
 
@@ -102,13 +114,6 @@ std::map<double, std::pair<State *, State *>> BSM_VCS::eval_succ_states() {
     return evals;
 }
 
-void BSM_VCS::update() {
-    BatchData batch_data(*block_data, current_states, vcs, w*w);
-    action_data = batch_data.get_batch_action_features();
-    placed_data = batch_data.get_batch_placed_features();
-    space_data = batch_data.get_batch_space_features();
-}
-
 bool BSM_VCS::is_finished() {
     bool finished = current_states.empty();
     if (finished) final_time = get_elapsed_time();
@@ -116,21 +121,16 @@ bool BSM_VCS::is_finished() {
 }
 
 void register_bsm_vcs(py::module &m) {
-    py::class_<BSM_VCS, ENV>(m, "BSM_VCS")
-        .def(py::init<std::string, int, int, double>(), 
-             py::arg("filename"), 
-             py::arg("instance_number"),
-             py::arg("w"),
-             py::arg("min_fr"))
+    py::class_<BSM_VCS, ENV>(m, "BSM_VCS", py::module_local())
+        .def(py::init<std::string, int, int, int, int, int, double>(), 
+             py::arg("filename"), py::arg("instance_number"), py::arg("w"), 
+             py::arg("max_blocks"), py::arg("max_actions"), py::arg("max_pblocks"), py::arg("min_fr"))
         .def_readwrite("best_volume", &BSM_VCS::best_volume)
         .def_readwrite("final_time", &BSM_VCS::final_time)
         .def_readwrite("w", &BSM_VCS::w)
 
-        .def("get_block_data", &ENV::get_block_data)
-        .def("get_action_data_batch", &BSM_VCS::get_action_data_batch)
-        .def("get_pblock_data_batch", &BSM_VCS::get_pblock_data_batch)
-        .def("get_space_data_batch", &BSM_VCS::get_space_data_batch)
-
+        .def("get_enc_data", &BSM_VCS::get_enc_data)
+        .def("get_dec_data_batch", &BSM_VCS::get_dec_data_batch)
         .def("transition", &BSM_VCS::transition, py::arg("selected_indexes_lists"))
         .def("is_finished", &BSM_VCS::is_finished);
 }

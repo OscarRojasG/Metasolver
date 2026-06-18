@@ -94,7 +94,7 @@ problems/clp/plugins/kdtree/kdNode.cpp
 problems/clp/plugins/kdtree/BlockSet.cpp
 )
 
-pybind11_add_module(bsm_engine 
+pybind11_add_module(bsm_engine_inf 
     problems/clp/envs/bsm_gm.cpp
     problems/clp/envs/bsm_vcs.cpp
     problems/clp/envs/greedy_model.cpp
@@ -102,10 +102,13 @@ pybind11_add_module(bsm_engine
     problems/clp/envs/binding.cpp
 )
 
-target_link_libraries(bsm_engine PRIVATE 
+target_link_libraries(bsm_engine_inf PRIVATE 
     -Wl,--whole-archive bsg clp clp_state clp_kdtree -Wl,--no-whole-archive
     BulletDynamics BulletCollision LinearMath
 )
+
+set_target_properties(bsm_engine_inf PROPERTIES CXX_VISIBILITY_PRESET hidden)
+set_target_properties(bsm_engine_inf PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
 
 
 ADD_EXECUTABLE(MCLP problems/mclp/main/mclp-solver.cpp)

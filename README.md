@@ -16,6 +16,10 @@ Clone the project:
 
      git clone https://github.com/rilianx/Metasolver.git
 
+Initialize submodules (required for pybind11):
+
+     git submodule update --init --recursive
+
 Compile the project:
 
      cmake .

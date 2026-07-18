@@ -15,7 +15,6 @@
 #include "Greedy.h"
 #include "DoubleEffort.h"
 #include "GlobalVariables.h"
-#include "BlockMetrics.h"
 #include "DataPrinter.h"
 
 using namespace std;

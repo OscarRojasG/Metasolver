@@ -18,6 +18,7 @@ CTestTestfile.cmake
 .settings
 /BSGMOP_CLP
 /BSG_CLP
+/VCS
 /CLP_GENSOLV
 /NSGA_CLP
 /libnsga2.a
@@ -38,4 +39,4 @@ libbeam_ACO.a
 libmcts.a
 
 .Rhistory
-BSG_B
+*.so

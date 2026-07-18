@@ -19,8 +19,6 @@ problems/clp/evaluators
 problems/clp
 problems/clp/plugins/kdtree
 problems/clp/plugins/ga
-problems/mclp
-metasolver/plugins/mop/strategies/
 )
 
 LINK_DIRECTORIES(
@@ -52,18 +50,6 @@ metasolver/State.cpp
 )
 
 ADD_LIBRARY(
-bsg_mop
- metasolver/plugins/mop/strategies/BSGMOP.cpp
-)
-
-ADD_LIBRARY(
-nsga2
- metasolver/plugins/mop/strategies/Chromosome.cpp
- metasolver/plugins/mop/strategies/NSGA2.cpp
- problems/clp/plugins/ga/clp_chromosome.cpp
-)
-
-ADD_LIBRARY(
 clp
 problems/clp/containers/AABBContainer.cpp
 problems/clp/containers/AABBTree.cpp
@@ -80,11 +66,6 @@ problems/clp/objects2/Block_fsb.cpp
 ADD_LIBRARY(
 clp_state
 problems/clp/clpState.cpp
-)
-
-ADD_LIBRARY(
-mclp_state
-problems/mclp/mclp-state.cpp
 )
 
 ADD_LIBRARY(
@@ -111,46 +92,8 @@ set_target_properties(bsm_engine_inf PROPERTIES CXX_VISIBILITY_PRESET hidden)
 set_target_properties(bsm_engine_inf PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
 
 
-ADD_EXECUTABLE(MCLP problems/mclp/main/mclp-solver.cpp)
 ADD_EXECUTABLE(BSG_CLP problems/clp/main_clp.cpp)
 ADD_EXECUTABLE(VCS problems/clp/vcs.cpp)
-ADD_EXECUTABLE(BSG_CLP_ANN problems/clp/plugins/ann/main_clp_ann.cpp)
-ADD_EXECUTABLE(CLP_GENSOLV problems/clp/plugins/ann/gen_ran_inst_solve.cpp)
-ADD_EXECUTABLE(test_BSG_CLP problems/clp/test_clp.cpp)
-ADD_EXECUTABLE(BSG_B problems/clp/clp_bsg-mop.cpp)
-ADD_EXECUTABLE(test_BSGMOP_CLP problems/clp/test_clp_mop.cpp)
-#ADD_EXECUTABLE(testEvalMOP problems/clp/test_evalMOP.cpp)
-ADD_EXECUTABLE(CLP_gen problems/clp/ClpInstanceGenerator.cpp)
-ADD_EXECUTABLE(NSGA_CLP problems/clp/plugins/ga/main.cpp)
 
-target_link_libraries(MCLP mclp_state  clp bsg)
 target_link_libraries(BSG_CLP clp_state clp bsg)
 target_link_libraries(VCS clp_state clp bsg)
-target_link_libraries(BSG_CLP_ANN clp_state clp clp_kdtree bsg)
-target_link_libraries(test_BSG_CLP clp_state clp clp_kdtree bsg)
-target_link_libraries(CLP_GENSOLV clp_state clp clp_kdtree bsg)
-target_link_libraries(NSGA_CLP clp_state clp nsga2 bsg)
-
-target_link_libraries(BSG_B bsg_mop clp_state clp bsg)
-target_link_libraries(test_BSGMOP_CLP bsg_mop clp_state clp bsg)
-#target_link_libraries(testEvalMOP bsg_mop clp_state clp bsg)
-
-enable_testing()
-
-add_test( NAME o-search
-   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/BSG_B problems/clp/benchs/BRwp-1.0-0.5/BR4.txt -i 1 --min_fr=0.98 -t 1 -s o-search --fp=R -f BRwp )
-
- add_test( NAME bsg
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/BSG_B problems/clp/benchs/BRwp-1.0-0.5/BR4.txt -i 1 --min_fr=0.98 -t 1 -s bsg --fp=R -f BRwp )
-
-  add_test( NAME bsg_p
-     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/BSG_B problems/clp/benchs/BRwp-1.0-0.5/BR4.txt -i 1 --min_fr=0.98 -t 1 -s bsg_p --fp=R -f BRwp )
-
- add_test( NAME bsg_vp
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/BSG_B problems/clp/benchs/BRwp-1.0-0.5/BR4.txt -i 1 --min_fr=0.98 -t 2 -s bsg_vp --fp=R -f BRwp )
-
-IF (INTERNAL_ADD_POSTFIX_EXECUTABLE_NAMES)
-			SET_TARGET_PROPERTIES(AppHelloWorld PROPERTIES  DEBUG_POSTFIX "_Debug")
-			SET_TARGET_PROPERTIES(AppHelloWorld PROPERTIES  MINSIZEREL_POSTFIX "_MinsizeRel")
-			SET_TARGET_PROPERTIES(AppHelloWorld PROPERTIES  RELWITHDEBINFO_POSTFIX "_RelWithDebugInfo")
-ENDIF(INTERNAL_ADD_POSTFIX_EXECUTABLE_NAMES)

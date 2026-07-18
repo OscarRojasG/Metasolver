@@ -38,6 +38,7 @@ public:
 private:
     clpState* current_node;
     bool completed = false;
+    int current_depth;
 
     // Vital para conectar el codificador de bloques con el de acciones
     std::map<int, int> id_to_idx; 

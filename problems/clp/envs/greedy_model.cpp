@@ -9,6 +9,7 @@ GreedyModel::GreedyModel(clpState* s0, int w, int max_blocks, int max_actions, i
     current_node = dynamic_cast<clp::clpState*>(s0->clone());
     volume = 0.0;
     this->w = w;
+    this->current_depth = 1;
 }
 
 GreedyModel::GreedyModel(std::string filename, int instance_number, int w, 
@@ -23,7 +24,7 @@ py::tuple GreedyModel::get_enc_data() {
 
 py::tuple GreedyModel::get_dec_data() {
     // Delegamos la creación de los 3 tensores al encoder
-    return TensorEncoder::get_dec_data(current_node, vcs, id_to_idx, max_actions, max_pblocks);
+    return TensorEncoder::get_dec_data(current_node, vcs, id_to_idx, max_actions, current_depth);
 }
 
 void GreedyModel::transition(int selected_index) {
@@ -61,6 +62,8 @@ void GreedyModel::transition(int selected_index) {
             break;
         }
     }
+
+    current_depth++;
 }
 
 void register_greedy_model(py::module &m) {

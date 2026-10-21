@@ -13,7 +13,7 @@ class BlockData {
         std::vector<int> block_index_to_id;
     
     public:
-        static const int N_BLOCK_FEATURES = 4;
+        static const int N_BLOCK_FEATURES = 5;
 
         BlockData(clpState* s0) {
             block_features.reserve(s0->valid_blocks.size() * N_BLOCK_FEATURES);
@@ -22,12 +22,14 @@ class BlockData {
             double cW = (double)s0->cont->getW();
             double cH = (double)s0->cont->getH();
             double md = max({cL, cW, cH});
+            double cV = cL * cW * cH;
     
             int count = 0;
             for (const Block* block : s0->valid_blocks) {          
                 block_features.push_back((float)block->getL() / md);
                 block_features.push_back((float)block->getW() / md);
                 block_features.push_back((float)block->getH() / md);
+                block_features.push_back((float)(block->getOccupiedVolume() / cV));
                 block_features.push_back((float)block->n_boxes);
     
                 block_id_to_index[block->id] = count;

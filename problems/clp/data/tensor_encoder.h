@@ -20,6 +20,7 @@ namespace TensorEncoder {
         float cW = static_cast<float>(state->cont->getW());
         float cH = static_cast<float>(state->cont->getH());
         float md = std::max({cL, std::max(cW, cH)});
+        double cV = static_cast<double>(state->cont->getL()) * state->cont->getW() * state->cont->getH();
 
         int count = 0;
         if (out_id_to_idx) out_id_to_idx->clear(); 
@@ -33,7 +34,7 @@ namespace TensorEncoder {
             ptr[offset + 0] = l;
             ptr[offset + 1] = w;
             ptr[offset + 2] = h;
-            ptr[offset + 3] = l * w * h; 
+            ptr[offset + 3] = static_cast<float>(block->getOccupiedVolume() / cV);
             ptr[offset + 4] = 1.0f / static_cast<float>(block->n_boxes);
 
             if (out_id_to_idx) (*out_id_to_idx)[block->id] = count;
@@ -133,6 +134,7 @@ namespace TensorEncoder {
         float cW = static_cast<float>(state->cont->getW());
         float cH = static_cast<float>(state->cont->getH());
         float md = std::max({cL, std::max(cW, cH)});
+        double cV = static_cast<double>(state->cont->getL()) * state->cont->getW() * state->cont->getH();
 
         int count = 0;
         out_id_to_idx.clear(); // Asegurar que el mapa esté limpio
@@ -143,7 +145,7 @@ namespace TensorEncoder {
             float l = static_cast<float>(block->getL()) / md;
             float w = static_cast<float>(block->getW()) / md;
             float h = static_cast<float>(block->getH()) / md;
-            float vol = l * w * h; 
+            float vol = static_cast<float>(block->getOccupiedVolume() / cV);
             float inv_n = 1.0f / static_cast<float>(block->n_boxes);
 
             int offset = count * 5;

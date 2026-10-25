@@ -31,7 +31,7 @@ public:
 	/**
 	 * Run the strategy
 	 */
-	virtual double run(State& s, double tl=99999.9, std::chrono::steady_clock::time_point bt = std::chrono::steady_clock::now()){
+	virtual double run(State& s, double tl=99999.9, metasolver::cpu_clock::time_point bt = metasolver::cpu_clock::now()){
 
 		State* s0=s.clone();
 

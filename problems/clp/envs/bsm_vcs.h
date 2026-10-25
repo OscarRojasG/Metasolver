@@ -17,7 +17,7 @@ public:
 
     BSM_VCS(std::string filename, int instance_number, int w, double min_fr=1);
 
-    BSM_VCS(clpState* s0, int w, double timelimit = 99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now());
+    BSM_VCS(clpState* s0, int w, double timelimit = 99999.9, metasolver::cpu_clock::time_point start_time = metasolver::cpu_clock::now());
 
     virtual ~BSM_VCS();
 

@@ -2,7 +2,7 @@
 
 namespace py = pybind11;
 
-GreedyModel::GreedyModel(clpState* s0, int w) : ENV(s0, 999999.9, std::chrono::steady_clock::now()) {
+GreedyModel::GreedyModel(clpState* s0, int w) : ENV(s0, 999999.9, metasolver::cpu_clock::now()) {
     current_node = dynamic_cast<clp::clpState*>(s0->clone());
 
     volume = 0.0;

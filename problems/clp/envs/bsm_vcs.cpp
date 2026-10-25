@@ -2,8 +2,8 @@
 
 namespace py = pybind11;
 
-BSM_VCS::BSM_VCS(clpState* s0, int w, double timelimit, std::chrono::steady_clock::time_point start_time) : 
-    ENV(s0, 999999.9, std::chrono::steady_clock::now()) {
+BSM_VCS::BSM_VCS(clpState* s0, int w, double timelimit, metasolver::cpu_clock::time_point start_time) : 
+    ENV(s0, 999999.9, metasolver::cpu_clock::now()) {
     this->gr = new Greedy(vcs);
     this->w = w;
 

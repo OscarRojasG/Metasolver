@@ -6,6 +6,7 @@
 #include "Greedy.h"
 #include "VCS_Function.h"
 #include <chrono>
+#include "CpuClock.h"
 #include "data/block_data.h"
 #include "data/batch_data.h"
 
@@ -19,7 +20,7 @@ public:
 
     clpState* s0;
 
-    ENV(clpState* s0, double timelimit=99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now()) {
+    ENV(clpState* s0, double timelimit=99999.9, metasolver::cpu_clock::time_point start_time = metasolver::cpu_clock::now()) {
         this->s0 = s0;
         this->timelimit = timelimit;
         this->start_time = start_time;
@@ -72,13 +73,13 @@ public:
     }
 
 protected:
-    std::chrono::steady_clock::time_point start_time;
+    metasolver::cpu_clock::time_point start_time;
 
     BlockData *block_data;
     VCS_Function *vcs;
     
     double get_elapsed_time() {
-        auto now = std::chrono::steady_clock::now();
+        auto now = metasolver::cpu_clock::now();
         return std::chrono::duration<double>(now - start_time).count();
     }
 };

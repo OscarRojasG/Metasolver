@@ -19,7 +19,7 @@ public:
     int max_blocks, max_actions, max_pblocks; // Nuevos límites de tensores
 
     BSM_GM(std::string filename, int instance_number, int w, int max_blocks, int max_actions, int max_pblocks, double min_fr=1);
-    BSM_GM(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks, double timelimit = 99999.9, std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now());
+    BSM_GM(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks, double timelimit = 99999.9, metasolver::cpu_clock::time_point start_time = metasolver::cpu_clock::now());
 
     virtual ~BSM_GM();
 

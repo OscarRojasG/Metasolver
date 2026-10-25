@@ -3,7 +3,7 @@
 namespace py = pybind11;
 
 GreedyModel::GreedyModel(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks) 
-    : ENV(s0, 999999.9, std::chrono::steady_clock::now()), 
+    : ENV(s0, 999999.9, metasolver::cpu_clock::now()), 
       max_blocks(max_blocks), max_actions(max_actions), max_pblocks(max_pblocks) {
     
     current_node = dynamic_cast<clp::clpState*>(s0->clone());

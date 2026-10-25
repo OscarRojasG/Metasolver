@@ -2,7 +2,7 @@
 
 namespace py = pybind11;
 
-ValuePredictor::ValuePredictor(clpState* s0, int w) : ENV(s0, 999999.9, std::chrono::steady_clock::now()) {
+ValuePredictor::ValuePredictor(clpState* s0, int w) : ENV(s0, 999999.9, metasolver::cpu_clock::now()) {
     this->w = w;
     
     clp::clpState* root_copy = dynamic_cast<clp::clpState*>(s0->clone());

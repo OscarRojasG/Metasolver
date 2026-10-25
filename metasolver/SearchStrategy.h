@@ -11,6 +11,7 @@
 #include <list>
 #include <chrono>
 #include "State.h"
+#include "CpuClock.h"
 
 #ifndef SEARCHSTRATEGY_H_
 #define SEARCHSTRATEGY_H_
@@ -24,14 +25,14 @@ class SearchStrategy {
 public:
 	SearchStrategy(ActionEvaluator* evl=NULL) 
         : evl(evl), best_state(NULL), timelimit(0.0), 
-          begin_time(std::chrono::steady_clock::now()) {}
+          begin_time(metasolver::cpu_clock::now()) {}
 
 	virtual ~SearchStrategy() {
 
 	}
 
 	double get_time() {
-        auto now = std::chrono::steady_clock::now();
+        auto now = metasolver::cpu_clock::now();
         std::chrono::duration<double> elapsed = now - begin_time;
         return elapsed.count();
     }
@@ -48,7 +49,7 @@ public:
 	/**
 	 * Run the strategy
 	 */
-	virtual double run(State& s, double tl=99999.9, std::chrono::steady_clock::time_point bt = std::chrono::steady_clock::now()){
+	virtual double run(State& s, double tl=99999.9, metasolver::cpu_clock::time_point bt = metasolver::cpu_clock::now()){
 		list<State*> S;
 		S.push_back(&s);
 		initialize (&s);
@@ -59,7 +60,7 @@ public:
 	/**
 	 * Run the strategy
 	 */
-	virtual double run(list<State*>& S, double tl=99999.9, std::chrono::steady_clock::time_point bt = std::chrono::steady_clock::now()){
+	virtual double run(list<State*>& S, double tl=99999.9, metasolver::cpu_clock::time_point bt = metasolver::cpu_clock::now()){
 		begin_time=bt;
 		timelimit=tl;
 
@@ -120,7 +121,7 @@ protected:
 
 	double timelimit;
 	State* best_state;
-	std::chrono::steady_clock::time_point begin_time;
+	metasolver::cpu_clock::time_point begin_time;
 
 	ActionEvaluator* evl;
 

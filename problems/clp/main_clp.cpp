@@ -186,7 +186,7 @@ int main(int argc, char** argv){
 	// SOLO SI PARÁMETRO T ESTÁ ESTABLECIDO
 	if(_maxtime) {
 		bsg = new BSG(vcs, *gr, 4, 0.0, 0, _plot); // w = 4 por defecto en código original
-		std::chrono::steady_clock::time_point begin_time = std::chrono::steady_clock::now();
+		metasolver::cpu_clock::time_point begin_time = metasolver::cpu_clock::now();
 		ss = new DoubleEffort(*bsg);
 		eval = ss->run(s_copy, maxtime, begin_time);
 	} else {

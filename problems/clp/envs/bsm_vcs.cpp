@@ -8,7 +8,7 @@ BSM_VCS::BSM_VCS(std::string filename, int instance_number, int w,
               w, max_blocks, max_actions, max_pblocks) {}
 
 BSM_VCS::BSM_VCS(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks, double timelimit) 
-    : ENV(s0, timelimit, std::chrono::steady_clock::now()), 
+    : ENV(s0, timelimit, metasolver::cpu_clock::now()), 
       max_blocks(max_blocks), max_actions(max_actions), max_pblocks(max_pblocks), w(w) {
     
     this->gr = new Greedy(vcs);

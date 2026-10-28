@@ -57,7 +57,15 @@ void BSM_VCS::transition(const std::vector<std::vector<int>>& selected_indexes_l
                     if (child_actions.size() > 0) {
                         succ_states.push_back({s, state_copy});
                     } else {
-                        delete state_copy;
+                        // Estado terminal: se evalúa aquí, ya que no pasa por eval_succ_states
+                        double volume = state_copy->get_value();
+                        if (volume > best_volume && get_elapsed_time() <= timelimit) {
+                            delete best_state;
+                            best_state = state_copy;
+                            best_volume = volume;
+                        } else {
+                            delete state_copy;
+                        }
                     }
                     
                     for (auto action_ptr : child_actions) delete action_ptr;
@@ -103,6 +111,7 @@ std::map<double, std::pair<State *, State *>> BSM_VCS::eval_succ_states() {
             
         // Actualizar el mejor volumen global
         if (volume > best_volume && get_elapsed_time() <= timelimit) {
+            delete best_state;
             best_state = dynamic_cast<clpState*> (item.second->clone());
             best_volume = volume;
         }

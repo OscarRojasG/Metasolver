@@ -132,6 +132,14 @@ bool BSM_VCS::is_finished() {
     return finished;
 }
 
+void BSM_VCS::reset() {
+    for (auto s : current_states) delete s;
+    current_states.clear();
+
+    current_states.push_back(dynamic_cast<clpState*>(s0->clone()));
+    current_depth = 1;
+}
+
 void register_bsm_vcs(py::module &m) {
     py::class_<BSM_VCS, ENV>(m, "BSM_VCS", py::module_local())
         .def(py::init<std::string, int, int, int, int, int, double>(), 
@@ -140,9 +148,13 @@ void register_bsm_vcs(py::module &m) {
         .def_readwrite("best_volume", &BSM_VCS::best_volume)
         .def_readwrite("final_time", &BSM_VCS::final_time)
         .def_readwrite("w", &BSM_VCS::w)
+        .def_readwrite("timelimit", &BSM_VCS::timelimit)
+        .def_readwrite("max_actions", &BSM_VCS::max_actions)
 
         .def("get_enc_data", &BSM_VCS::get_enc_data)
         .def("get_dec_data_batch", &BSM_VCS::get_dec_data_batch)
         .def("transition", &BSM_VCS::transition, py::arg("selected_indexes_lists"))
-        .def("is_finished", &BSM_VCS::is_finished);
+        .def("is_finished", &BSM_VCS::is_finished)
+        .def("reset", &BSM_VCS::reset)
+        .def("get_elapsed_time", &BSM_VCS::get_elapsed_time);
 }

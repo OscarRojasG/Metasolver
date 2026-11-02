@@ -72,16 +72,16 @@ public:
         return { placed_data, space_data };
     }
 
+    double get_elapsed_time() {
+        auto now = metasolver::cpu_clock::now();
+        return std::chrono::duration<double>(now - start_time).count();
+    }
+
 protected:
     metasolver::cpu_clock::time_point start_time;
 
     BlockData *block_data;
     VCS_Function *vcs;
-    
-    double get_elapsed_time() {
-        auto now = metasolver::cpu_clock::now();
-        return std::chrono::duration<double>(now - start_time).count();
-    }
 };
 
 #endif

@@ -26,6 +26,9 @@ public:
     void transition(const std::vector<std::vector<int>>& selected_indexes_lists);
     bool is_finished();
 
+    // Reinicia la búsqueda desde la raíz, conservando la mejor solución y el tiempo transcurrido
+    void reset();
+
     // Nueva interfaz directa
     py::tuple get_enc_data();
     py::tuple get_dec_data_batch();

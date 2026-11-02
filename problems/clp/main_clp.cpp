@@ -85,7 +85,6 @@ int main(int argc, char** argv){
 	args::Flag _plot(parser, "double", "plot tree", {"plot"});
 	args::Flag fsb(parser, "fsb", "full-support blocks", {"fsb"});
 	args::Flag trace(parser, "trace", "Trace", {"trace"});
-	args::Flag de(parser, "de", "Double Search Effort", {"de"});
 	args::Positional<std::string> _file(parser, "instance-set", "The name of the instance set");
 
 	cout.precision(8);
@@ -190,12 +189,7 @@ int main(int argc, char** argv){
 		ss = new DoubleEffort(*bsg);
 		eval = ss->run(s_copy, maxtime, begin_time);
 	} else {
-		if (de) {
-			bsg = new BSG(vcs, *gr, min(w, 4), 0.0, 0, _plot);
-			ss = new DoubleEffort(*bsg, w);
-		} else {
-			ss = new BSG(vcs, *gr, w, 0.0, 0, _plot);
-		}
+		ss = new BSG(vcs, *gr, w, 0.0, 0, _plot);
 		eval = ss->run(s_copy);
 	}
 	double time = ss->get_time();

@@ -18,9 +18,7 @@ namespace metasolver {
 
 class DoubleEffort : public SearchStrategy {
 public:
-	DoubleEffort(BSG& bsg, int max_w=999999) : bsg(bsg) {
-		this->max_w = max_w;
-	};
+	DoubleEffort(BSG& bsg) : bsg(bsg) {};
 
 	virtual list<State*> next(list<State*>& S){
 		State& s= **S.begin();
@@ -34,17 +32,12 @@ public:
 		}
 
 		bsg.double_effort();
-		if (bsg.beams > max_w) {
-			S.clear();
-			return S;
-		}
 
 		return S;
 	}
 
 private:
 	BSG& bsg;
-	int max_w;
 };
 
 } /* namespace clp */

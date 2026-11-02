@@ -39,6 +39,8 @@ void BSM_VCS::transition(const std::vector<std::vector<int>>& selected_indexes_l
 
     for (auto s : current_states) {
         for (auto block_idx : selected_indexes_lists[i]) {
+            if (get_elapsed_time() > timelimit) break;
+
             std::list<Action*> actions;
             s->get_actions(actions);
 
@@ -59,7 +61,7 @@ void BSM_VCS::transition(const std::vector<std::vector<int>>& selected_indexes_l
                     } else {
                         // Estado terminal: se evalúa aquí, ya que no pasa por eval_succ_states
                         double volume = state_copy->get_value();
-                        if (volume > best_volume && get_elapsed_time() <= timelimit) {
+                        if (volume > best_volume) {
                             delete best_state;
                             best_state = state_copy;
                             best_volume = volume;
@@ -106,11 +108,16 @@ void BSM_VCS::transition(const std::vector<std::vector<int>>& selected_indexes_l
 std::map<double, std::pair<State *, State *>> BSM_VCS::eval_succ_states() {
     std::map<double, std::pair<State *, State *>> evals;
     for (auto& item : succ_states) {
-        std::list<Action*> next_actions;
-        double volume = gr->run(*item.second);
+        // Sin tiempo: el hijo se descarta sin evaluar
+        if (get_elapsed_time() > timelimit) {
+            delete item.second;
+            continue;
+        }
+
+        double volume = gr->run(*item.second, timelimit, start_time);
             
         // Actualizar el mejor volumen global
-        if (volume > best_volume && get_elapsed_time() <= timelimit) {
+        if (volume > best_volume) {
             delete best_state;
             best_state = dynamic_cast<clpState*> (item.second->clone());
             best_volume = volume;
@@ -127,6 +134,12 @@ std::map<double, std::pair<State *, State *>> BSM_VCS::eval_succ_states() {
 }
 
 bool BSM_VCS::is_finished() {
+    // Al alcanzar el tiempo límite se descartan los nodos pendientes
+    if (get_elapsed_time() > timelimit) {
+        for (auto s : current_states) delete s;
+        current_states.clear();
+    }
+
     bool finished = current_states.empty();
     if (finished) final_time = get_elapsed_time();
     return finished;

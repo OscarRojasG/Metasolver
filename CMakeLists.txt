@@ -95,5 +95,10 @@ set_target_properties(bsm_engine_inf PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
 ADD_EXECUTABLE(BSG_CLP problems/clp/main_clp.cpp)
 ADD_EXECUTABLE(VCS problems/clp/vcs.cpp)
 
+# BSG con w hijos fijos por nodo (en lugar de w*w / |S|)
+ADD_EXECUTABLE(BSG_CLP_FIXED_W problems/clp/main_clp.cpp)
+target_compile_definitions(BSG_CLP_FIXED_W PRIVATE BSG_FIXED_W)
+
 target_link_libraries(BSG_CLP clp_state clp bsg)
+target_link_libraries(BSG_CLP_FIXED_W clp_state clp bsg)
 target_link_libraries(VCS clp_state clp bsg)

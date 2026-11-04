@@ -180,16 +180,23 @@ int main(int argc, char** argv){
 
 	cout << "running" << endl;
 
+	// BSG_CLP_FIXED_W: cada nodo expande exactamente w hijos (en lugar de w*w / |S|)
+#ifdef BSG_FIXED_W
+	bool fixed_w = true;
+#else
+	bool fixed_w = false;
+#endif
+
 	SearchStrategy *ss;
 	double eval;
 	// SOLO SI PARÁMETRO T ESTÁ ESTABLECIDO
 	if(_maxtime) {
-		bsg = new BSG(vcs, *gr, 4, 0.0, 0, _plot); // w = 4 por defecto en código original
+		bsg = new BSG(vcs, *gr, 4, 0.0, 0, _plot, fixed_w); // w = 4 por defecto en código original
 		metasolver::cpu_clock::time_point begin_time = metasolver::cpu_clock::now();
 		ss = new DoubleEffort(*bsg);
 		eval = ss->run(s_copy, maxtime, begin_time);
 	} else {
-		ss = new BSG(vcs, *gr, w, 0.0, 0, _plot);
+		ss = new BSG(vcs, *gr, w, 0.0, 0, _plot, fixed_w);
 		eval = ss->run(s_copy);
 	}
 	double time = ss->get_time();

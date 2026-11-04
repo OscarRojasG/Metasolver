@@ -27,11 +27,12 @@ public:
 	 * @param beams the number of beams
 	 * @p_elite the proportion of beams in the elite set (0.0, means 1 beam)
 	 * @max_level_size the maximum number of expanded nodes by level of the tree
+	 * @fixed_w if true, each node expands exactly beams children instead of max_level_size/|S|
 	 */
-	BSG(ActionEvaluator* evl, SearchStrategy& greedy, int beams, double p_elite=0.0, int max_level_size=0, bool plot=false) :
+	BSG(ActionEvaluator* evl, SearchStrategy& greedy, int beams, double p_elite=0.0, int max_level_size=0, bool plot=false, bool fixed_w=false) :
 		SearchStrategy(evl), greedy(greedy), beams(beams),
 		max_level_size((max_level_size==0)? beams*beams:max_level_size),
-		p_elite(p_elite), n_elite(max(1, (int)(p_elite*beams))), shuffle_best_path(false), plot(plot) {}
+		p_elite(p_elite), n_elite(max(1, (int)(p_elite*beams))), shuffle_best_path(false), plot(plot), fixed_w(fixed_w) {}
 
 
 	virtual ~BSG();
@@ -164,6 +165,11 @@ public:
 	bool shuffle_best_path;
 
 	bool plot;
+
+	/*
+	 * Expand exactly beams children per node
+	 */
+	bool fixed_w;
 
 };
 

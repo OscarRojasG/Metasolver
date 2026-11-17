@@ -1,5 +1,5 @@
-#ifndef BSM_VCS_H
-#define BSM_VCS_H
+#ifndef BSG_HYBRID_H
+#define BSG_HYBRID_H
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -13,15 +13,15 @@
 #include "envs/env.h"
 #include "data/tensor_encoder.h"
 
-class BSM_VCS : public ENV {
+class BSG_Hybrid : public ENV {
 public:
     int w;
     int max_blocks, max_actions, max_pblocks;
 
-    BSM_VCS(std::string filename, int instance_number, int w, int max_blocks, int max_actions, int max_pblocks, double min_fr=1);
-    BSM_VCS(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks, double timelimit = 99999.9);
+    BSG_Hybrid(std::string filename, int instance_number, int w, int max_blocks, int max_actions, int max_pblocks, double min_fr=1);
+    BSG_Hybrid(clpState* s0, int w, int max_blocks, int max_actions, int max_pblocks, double timelimit = 99999.9);
     
-    virtual ~BSM_VCS();
+    virtual ~BSG_Hybrid();
 
     void transition(const std::vector<std::vector<int>>& selected_indexes_lists);
     bool is_finished();

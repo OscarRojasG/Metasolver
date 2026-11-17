@@ -75,30 +75,28 @@ problems/clp/plugins/kdtree/kdNode.cpp
 problems/clp/plugins/kdtree/BlockSet.cpp
 )
 
-pybind11_add_module(bsm_engine_inf 
-    problems/clp/envs/bsm_gm.cpp
-    problems/clp/envs/bsm_vcs.cpp
+pybind11_add_module(clp_engine
+    problems/clp/envs/bsg_hybrid.cpp
     problems/clp/envs/greedy_model.cpp
-    problems/clp/envs/value_predictor.cpp
     problems/clp/envs/binding.cpp
 )
 
-target_link_libraries(bsm_engine_inf PRIVATE 
+target_link_libraries(clp_engine PRIVATE
     -Wl,--whole-archive bsg clp clp_state clp_kdtree -Wl,--no-whole-archive
     BulletDynamics BulletCollision LinearMath
 )
 
-set_target_properties(bsm_engine_inf PROPERTIES CXX_VISIBILITY_PRESET hidden)
-set_target_properties(bsm_engine_inf PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
+set_target_properties(clp_engine PROPERTIES CXX_VISIBILITY_PRESET hidden)
+set_target_properties(clp_engine PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
 
 
-ADD_EXECUTABLE(BSG_CLP problems/clp/main_clp.cpp)
+ADD_EXECUTABLE(BSG_VCS problems/clp/main_clp.cpp)
 ADD_EXECUTABLE(VCS problems/clp/vcs.cpp)
 
-# BSG con w hijos fijos por nodo (en lugar de w*w / |S|)
-ADD_EXECUTABLE(BSG_CLP_FIXED_W problems/clp/main_clp.cpp)
-target_compile_definitions(BSG_CLP_FIXED_W PRIVATE BSG_FIXED_W)
+# BSG-VCS con w hijos fijos por nodo (en lugar de w*w / |S|), para la ablación de la regla de expansión
+ADD_EXECUTABLE(BSG_VCS_FIXED_W problems/clp/main_clp.cpp)
+target_compile_definitions(BSG_VCS_FIXED_W PRIVATE BSG_FIXED_W)
 
-target_link_libraries(BSG_CLP clp_state clp bsg)
-target_link_libraries(BSG_CLP_FIXED_W clp_state clp bsg)
+target_link_libraries(BSG_VCS clp_state clp bsg)
+target_link_libraries(BSG_VCS_FIXED_W clp_state clp bsg)
 target_link_libraries(VCS clp_state clp bsg)

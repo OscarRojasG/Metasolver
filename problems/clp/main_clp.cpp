@@ -25,8 +25,8 @@
 
 using namespace std;
 
-// para ejecutar (menos de 30 tipos de caja): BSG_CLP problems/clp/benchs/BR/BR7.txt 1 1.0 30 4.0 1.0 0.2 0.04 1.0 0.0 0.0 0 0
-// para ejecutar (mas de 30 tipos de caja): BSG_CLP problems/clp/benchs/BR/BR8.txt 1 0.98 30 4.0 1.0 0.2 0.04 1.0 0.0 0.0 0 0
+// para ejecutar (menos de 30 tipos de caja): BSG_VCS problems/clp/benchs/BR/BR7.txt 1 1.0 30 4.0 1.0 0.2 0.04 1.0 0.0 0.0 0 0
+// para ejecutar (mas de 30 tipos de caja): BSG_VCS problems/clp/benchs/BR/BR8.txt 1 0.98 30 4.0 1.0 0.2 0.04 1.0 0.0 0.0 0 0
 
 
 
@@ -180,7 +180,7 @@ int main(int argc, char** argv){
 
 	cout << "running" << endl;
 
-	// BSG_CLP_FIXED_W: cada nodo expande exactamente w hijos (en lugar de w*w / |S|)
+	// BSG_VCS_FIXED_W: cada nodo expande exactamente w hijos (en lugar de w*w / |S|)
 #ifdef BSG_FIXED_W
 	bool fixed_w = true;
 #else

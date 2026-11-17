@@ -17,7 +17,8 @@ CTestTestfile.cmake
 /libscp.a
 .settings
 /BSGMOP_CLP
-/BSG_CLP
+/BSG_VCS
+/BSG_VCS_FIXED_W
 /VCS
 /CLP_GENSOLV
 /NSGA_CLP

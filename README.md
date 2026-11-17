@@ -31,7 +31,7 @@ Options
 --------
 
 ```
-./BSG_CLP {OPTIONS} [instance-set]
+./BSG_VCS {OPTIONS} [instance-set]
 
     ********* BSG-CLP *********.
 
@@ -61,7 +61,7 @@ Options
 
 Example
 -----
-     ./BSG_CLP problems/clp/benchs/BR/BR2.txt -i 47 -t 10
+     ./BSG_VCS problems/clp/benchs/BR/BR2.txt -i 47 -t 10
 
 ---
 
